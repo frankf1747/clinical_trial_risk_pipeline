@@ -1,0 +1,3 @@
+id|nct_id|intervention_id|name
+1|NCT001|1|MK-3475
+2|NCT002|3|Sugar pill

@@ -1,0 +1,4 @@
+id|nct_id|mesh_term|downcase_mesh_term|mesh_type
+1|NCT009|Ibuprofen|ibuprofen|mesh-list
+2|NCT009|Anti-Inflammatory Agents, Non-Steroidal|anti-inflammatory agents, non-steroidal|mesh-ancestor
+3|NCT004|Aspirin|aspirin|mesh-list

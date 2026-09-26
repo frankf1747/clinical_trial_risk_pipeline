@@ -4,34 +4,18 @@ import sys
 import zipfile
 from pathlib import Path
 
-import requests
-
 from ctrisk.config import load_config
+from ctrisk.ingest.download import download
 
-TABLES = ("studies", "designs", "sponsors", "interventions")
+TABLES = ("studies", "designs", "sponsors", "interventions",
+          "intervention_other_names", "browse_interventions")
 
 
 def fetch(source: str, dest: Path, tables: tuple[str, ...] = TABLES) -> list[Path]:
     dest.mkdir(parents=True, exist_ok=True)
     is_url = source.startswith(("http://", "https://"))
-    zip_path = _download(source, dest.parent / "aact.zip") if is_url else Path(source)
+    zip_path = download(source, dest.parent / "aact.zip") if is_url else Path(source)
     return _extract(zip_path, dest, tables)
-
-
-def _download(url: str, target: Path) -> Path:
-    if target.exists():
-        print(f"skip download, {target} exists")
-        return target
-    partial = target.with_suffix(".part")
-    with requests.get(url, stream=True, timeout=60) as r:
-        r.raise_for_status()
-        with open(partial, "wb") as f:
-            f.writelines(r.iter_content(1 << 20))
-    if not zipfile.is_zipfile(partial):
-        partial.unlink()
-        raise ValueError("download is not a zip; download it in a browser and pass the local path")
-    partial.rename(target)
-    return target
 
 
 def _extract(zip_path: Path, dest: Path, tables: tuple[str, ...]) -> list[Path]:

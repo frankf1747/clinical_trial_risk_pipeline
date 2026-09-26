@@ -20,4 +20,5 @@ def spark():
 def aact(spark):
     from ctrisk.spark.clean_trials import read_table
     return {t: read_table(spark, str(FIXTURES / "aact"), t)
-            for t in ("studies", "designs", "sponsors", "interventions")}
+            for t in ("studies", "designs", "sponsors", "interventions",
+                      "intervention_other_names", "browse_interventions")}

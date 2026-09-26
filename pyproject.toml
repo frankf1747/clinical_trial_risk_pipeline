@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Predict early termination of drug clinical trials"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    "ijson>=3.3",
     "pyspark==3.5.3",
     "python-dotenv>=1.0",
     "requests>=2.32",
