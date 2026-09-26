@@ -1,0 +1,12 @@
+id|nct_id|intervention_type|name
+1|NCT001|DRUG|Pembrolizumab
+2|NCT002|BIOLOGICAL|Adalimumab
+3|NCT002|OTHER|Placebo
+4|NCT003|DRUG|Metformin 500 mg
+5|NCT004|DRUG|Aspirin
+6|NCT005|DRUG|Aspirin
+7|NCT006|DRUG|Aspirin
+8|NCT007|DRUG|Aspirin
+9|NCT008|DEVICE|Coronary stent
+10|NCT009|Drug|Ibuprofen
+11|NCT010|DRUG|Aspirin

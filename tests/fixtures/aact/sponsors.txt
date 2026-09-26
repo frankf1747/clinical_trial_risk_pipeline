@@ -1,0 +1,6 @@
+id|nct_id|agency_class|lead_or_collaborator|name
+1|NCT001|INDUSTRY|lead|Merck
+2|NCT002|OTHER|lead|State University
+3|NCT002|INDUSTRY|collaborator|AbbVie
+4|NCT003|NIH|lead|National Cancer Institute
+5|NCT009|Industry|lead|Pfizer

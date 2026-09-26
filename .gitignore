@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.DS_Store
+.env
+data/
+models/*/model.pkl
+spark-warehouse/
+metastore_db/
+derby.log
+.Rhistory
