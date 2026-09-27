@@ -62,3 +62,13 @@ M2 on the FAERS sample (Q1 of each year 2004–2020; 279 files, 14.9 GB zipped, 
 
 Unmatched trials are mostly investigational compounds with no marketing history (e.g. "BI 10773"), drugs never sold in the US, placebos, and non-drug interventions.
 
+M3 in Snowflake (`TRIAL_FEATURES`, built from GCS in ~50 s; all checks pass):
+
+| Split | Trials | Termination rate | With FAERS history before start |
+|---|---|---|---|
+| train (started 2008–2016) | 46,528 | 14.1% | 62.1% |
+| test (started 2017–2020) | 19,596 | 18.7% | 58.4% |
+| score (active) | 29,894 | — | 57.1% |
+
+The test split's higher termination rate is expected: only trials finished by the snapshot have a label, and terminated trials finish sooner. A hand check of one trial (NCT00456846) against the raw tables matched on every FAERS and sponsor feature.
+
