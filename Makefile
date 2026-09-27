@@ -1,4 +1,6 @@
-.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers
+-include .env
+
+.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes upload warehouse
 
 setup:
 	uv sync
@@ -24,3 +26,17 @@ match:
 
 check-faers:
 	uv run python -m ctrisk.checks.faers_api
+
+attributes:
+	uv run python -m ctrisk.spark.trial_attributes
+
+# Mirror the Parquet Snowflake loads to GCS (~75 MB). Deleting stale objects matters:
+# Spark part-file names change every run, and leftovers would load twice.
+upload:
+	@test -n "$(strip $(GCP_BUCKET))" || (echo "GCP_BUCKET is not set in .env" && exit 1)
+	gcloud storage rsync --recursive --delete-unmatched-destination-objects \
+	  --exclude='.*\.crc$$|.*_SUCCESS$$|^drug_interventions/.*' \
+	  data/parquet gs://$(strip $(GCP_BUCKET))/parquet
+
+warehouse:
+	uv run python -m ctrisk.warehouse.snowflake

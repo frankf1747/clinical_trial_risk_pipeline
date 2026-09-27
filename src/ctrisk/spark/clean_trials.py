@@ -77,6 +77,26 @@ def build_drug_interventions(interventions: DataFrame, trials: DataFrame) -> Dat
             .select("nct_id", F.col("id").alias("intervention_id"), "name"))
 
 
+def build_sponsor_outcomes(studies: DataFrame, sponsors: DataFrame) -> DataFrame:
+    """Every finished interventional study, with its lead sponsor and end date.
+
+    This is the history sponsor features look back on; Snowflake only uses rows that
+    ended before a given trial started.
+    """
+    status = norm(F.col("overall_status"))
+    lead = (sponsors.where(F.lower("lead_or_collaborator") == "lead")
+            .select("nct_id", F.col("name").alias("sponsor_name"))
+            .dropDuplicates(["nct_id"]))
+    return (studies
+            .where((norm(F.col("study_type")) == "INTERVENTIONAL")
+                   & status.isin("COMPLETED", "TERMINATED")
+                   & F.col("completion_date").isNotNull())
+            .select("nct_id",
+                    (status == "TERMINATED").cast("int").alias("terminated"),
+                    F.to_date("completion_date").alias("completion_date"))
+            .join(lead, "nct_id"))
+
+
 def check_trials(trials: DataFrame, min_trials: int) -> dict:
     labeled, rate, active = trials.agg(
         F.count("label"), F.avg("label"), F.sum(F.col("label").isNull().cast("int"))
@@ -100,4 +120,6 @@ if __name__ == "__main__":
     trials.write.mode("overwrite").parquet(cfg.path("parquet", "trials"))
     build_drug_interventions(t["interventions"], trials) \
         .write.mode("overwrite").parquet(cfg.path("parquet", "drug_interventions"))
+    build_sponsor_outcomes(t["studies"], t["sponsors"]) \
+        .write.mode("overwrite").parquet(cfg.path("parquet", "sponsor_outcomes"))
     print(summary)

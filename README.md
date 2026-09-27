@@ -14,8 +14,29 @@ make trials                                   # -> data/parquet/trials, drug_int
 make faers                                    # -> data/parquet/faers_drug_events
 make match                                    # -> data/parquet/trial_drug_map
 make check-faers                              # our counts vs the openFDA API
+make attributes                               # -> data/parquet/trial_attributes
+make upload                                   # data/parquet -> gs://$GCP_BUCKET/parquet
+make warehouse                                # Snowflake: RAW_* -> TRIAL_FEATURES, then checks
 make test
 ```
+
+## Snowflake setup (once)
+
+```bash
+mkdir -p ~/.snowflake && openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out ~/.snowflake/rsa_key.p8 -nocrypt && chmod 600 ~/.snowflake/rsa_key.p8
+openssl rsa -in ~/.snowflake/rsa_key.p8 -pubout | grep -v -- '-----' | tr -d '\n'
+```
+
+In Snowsight: `ALTER USER <your user> SET RSA_PUBLIC_KEY='<the printed key>';`
+
+Then run `sql/00_setup.sql` in Snowsight (as `ACCOUNTADMIN`, top to bottom), copy `STORAGE_GCP_SERVICE_ACCOUNT` from its `DESC STORAGE INTEGRATION` output, and grant that service account `roles/storage.objectViewer` on the bucket:
+
+```bash
+gcloud storage buckets add-iam-policy-binding gs://$GCP_BUCKET \
+  --member="serviceAccount:<STORAGE_GCP_SERVICE_ACCOUNT>" --role=roles/storage.objectViewer
+```
+
+Fill in the Snowflake block in `.env` (see `.env.example`).
 
 ## Status
 

@@ -1,0 +1,3 @@
+id|nct_id|gender|minimum_age|maximum_age|healthy_volunteers|criteria
+1|NCT001|ALL|18 Years|75 Years|f|Inclusion Criteria:~1. Adults~2. Measurable disease~Exclusion Criteria:~1. Pregnancy
+2|NCT003|FEMALE|6 Months||t|

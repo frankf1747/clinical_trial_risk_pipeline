@@ -1,0 +1,6 @@
+id|nct_id|mesh_term|downcase_mesh_term|mesh_type
+1|NCT001|Lung Neoplasms|lung neoplasms|mesh-list
+2|NCT001|Neoplasms|neoplasms|mesh-ancestor
+3|NCT001|Respiratory Tract Diseases|respiratory tract diseases|mesh-ancestor
+4|NCT002|Arthritis, Rheumatoid|arthritis, rheumatoid|mesh-list
+5|NCT002|Immune System Diseases|immune system diseases|mesh-ancestor

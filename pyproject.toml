@@ -8,10 +8,15 @@ dependencies = [
     "pyspark==3.5.3",
     "python-dotenv>=1.0",
     "requests>=2.32",
+    "snowflake-connector-python>=4.7.5",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = [
+    "duckdb>=1.5.5",
+    "pytest>=8",
+    "ruff>=0.6",
+]
 
 [build-system]
 requires = ["hatchling"]

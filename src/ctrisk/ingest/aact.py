@@ -8,7 +8,8 @@ from ctrisk.config import load_config
 from ctrisk.ingest.download import download
 
 TABLES = ("studies", "designs", "sponsors", "interventions",
-          "intervention_other_names", "browse_interventions")
+          "intervention_other_names", "browse_interventions",
+          "countries", "eligibilities", "browse_conditions")
 
 
 def fetch(source: str, dest: Path, tables: tuple[str, ...] = TABLES) -> list[Path]:
