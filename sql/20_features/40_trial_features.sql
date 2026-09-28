@@ -5,8 +5,9 @@ CREATE OR REPLACE TABLE TRIAL_FEATURES AS
 SELECT t.nct_id,
        t.label,
        CASE WHEN t.label IS NULL THEN 'score'
-            WHEN t.start_date < DATE '2017-01-01' THEN 'train'
-            ELSE 'test' END                                        AS split,
+            WHEN t.start_date < DATE '2015-01-01' THEN 'train'
+            WHEN t.start_date < DATE '2017-01-01' THEN 'test'      -- resolved years: headline metric
+            ELSE 'recent' END                                      AS split,  -- 2017-2020: still censored
        t.start_date,
        t.phase, t.number_of_arms, t.allocation, t.intervention_model, t.primary_purpose,
        t.masking, t.sponsor_class,

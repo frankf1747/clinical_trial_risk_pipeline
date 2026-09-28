@@ -17,6 +17,8 @@ make check-faers                              # our counts vs the openFDA API
 make attributes                               # -> data/parquet/trial_attributes
 make upload                                   # data/parquet -> gs://$GCP_BUCKET/parquet
 make warehouse                                # Snowflake: RAW_* -> TRIAL_FEATURES, then checks
+make train                                    # clone TRIAL_FEATURES, fit, save models/vN
+make score                                    # append active-trial scores to TRIAL_RISK_SCORES
 make test
 ```
 

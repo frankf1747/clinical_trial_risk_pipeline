@@ -17,7 +17,9 @@ def db():
         ('T3', DATE '2024-01-01', NULL, 'Beta',  'OTHER'),     -- active, no matched drug
         ('T4', DATE '2010-01-15', 0,    'Gamma', 'OTHER'),     -- its drug is only reported later
         ('T5', DATE '2020-06-01', 1,    'Acme',  'INDUSTRY'),  -- has its own outcome row
-        ('T6', DATE '2017-01-01', 0,    'Delta', 'OTHER')      -- first day of the test period""")
+        ('T6', DATE '2017-01-01', 0,    'Delta', 'OTHER'),     -- first day of the recent years
+        ('T7', DATE '2015-01-01', 0,    'Eps',   'OTHER'),     -- first day of the test years
+        ('T8', DATE '2014-12-31', 0,    'Eps',   'OTHER')      -- last day of the training years""")
     con.execute("""INSERT INTO RAW_TRIAL_ATTRIBUTES (nct_id, n_countries) VALUES
         ('T1', 3), ('T2', 1), ('T3', 1), ('T4', 1), ('T5', 2), ('T6', 1)""")
     con.execute("INSERT INTO RAW_TRIAL_DRUG_MAP VALUES ('T1', 'drugx'), ('T2', 'drugx'), ('T4', 'drugx')")
@@ -78,9 +80,9 @@ def test_sponsor_history_uses_only_trials_that_ended_before_start(db):
 
 
 def test_split_by_start_year(db):
-    splits = {t: features(db, t)["split"] for t in ("T1", "T2", "T3", "T4", "T5", "T6")}
-    assert splits == {"T1": "train", "T2": "test", "T3": "score",
-                      "T4": "train", "T5": "test", "T6": "test"}
+    splits = {t: features(db, t)["split"] for t in ("T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8")}
+    assert splits == {"T1": "test", "T2": "recent", "T3": "score", "T4": "train",
+                      "T5": "recent", "T6": "recent", "T7": "test", "T8": "train"}
 
 
 def test_post_start_fields_never_reach_features(db):

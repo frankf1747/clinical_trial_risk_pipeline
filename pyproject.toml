@@ -5,10 +5,13 @@ description = "Predict early termination of drug clinical trials"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "ijson>=3.3",
+    "lightgbm>=4.7.0",
+    "pandas>=2.3.3",
     "pyspark==3.5.3",
     "python-dotenv>=1.0",
     "requests>=2.32",
-    "snowflake-connector-python>=4.7.5",
+    "scikit-learn>=1.9.1",
+    "snowflake-connector-python[pandas]>=4.7.5",
 ]
 
 [dependency-groups]

@@ -4,7 +4,7 @@ SELECT nct_id FROM TRIAL_FEATURES GROUP BY nct_id HAVING COUNT(*) > 1;
 -- check: every trial has a feature row
 SELECT nct_id FROM RAW_TRIALS WHERE nct_id NOT IN (SELECT nct_id FROM TRIAL_FEATURES);
 
--- check: labels only in train and test
+-- check: every split except score has labels
 SELECT nct_id FROM TRIAL_FEATURES WHERE (label IS NULL) <> (split = 'score');
 
 -- check: test split is not empty

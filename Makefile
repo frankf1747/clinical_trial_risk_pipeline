@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes upload warehouse
+.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes upload warehouse train score
 
 setup:
 	uv sync
@@ -40,3 +40,9 @@ upload:
 
 warehouse:
 	uv run python -m ctrisk.warehouse.snowflake
+
+train:
+	uv run python -m ctrisk.ml.train
+
+score:
+	uv run python -m ctrisk.ml.score
