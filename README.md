@@ -75,3 +75,17 @@ M3 in Snowflake (`TRIAL_FEATURES`, built from GCS in ~50 s; all checks pass):
 
 The test split's higher termination rate is expected: only trials finished by the snapshot have a label, and terminated trials finish sooner. A hand check of one trial (NCT00456846) against the raw tables matched on every FAERS and sponsor feature.
 
+## Results (model v2, trained on starts 2008–2014, tested on resolved 2015–2016)
+
+| Target | Test ROC AUC (95% CI) | Baseline (logistic) | Top-10% precision vs base rate |
+|---|---|---|---|
+| Any termination | **0.716** (0.703–0.729) | 0.678 | 33.8% vs 14.8% (2.3×) |
+| Terminated for enrollment | **0.791** (0.773–0.810) | 0.764 | 17.5% vs ~5% (3.5×) |
+| Terminated for safety | 0.666 (0.609–0.720) | 0.669 | 87 test positives — too few to be conclusive |
+
+What each ingredient adds (any-termination model, test AUC): registration text +0.016, burden features +0.011, FAERS +0.002. By sponsor: industry 0.743, academic/other 0.672, government 0.671. On the censored 2017–2020 trials the AUC is 0.711, close to the headline.
+
+v1 (M4) scored 0.693. The v2 gain comes from registration text, trial-governance fields (DMC, responsible party, collaborators), sponsor activity, and tuning on an inner time split — after removing four leakage sources found in review (outcome measures rewritten at results posting, termination wording in summaries, negated "no safety concerns" reasons, and a sponsor feature that skewed at scoring time).
+
+Limitations: stop reasons come from free text (safety labels are ~70–80% precise); features describe the latest registry record, not the one at start; planned enrollment is excluded because the current record leaks the outcome. FAERS adds little here; the full 113 GB history is the next test of that.
+

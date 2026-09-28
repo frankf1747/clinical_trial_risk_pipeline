@@ -1,0 +1,927 @@
+{
+  "targets": {
+    "label": {
+      "description": "any termination",
+      "params": {
+        "n_estimators": 146,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "random_state": 0,
+        "verbose": -1,
+        "metric": "auc",
+        "num_leaves": 63,
+        "learning_rate": 0.03,
+        "min_child_samples": 200
+      },
+      "grid": [
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 410,
+          "val_auc": 0.7329
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 342,
+          "val_auc": 0.7341
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 145,
+          "val_auc": 0.7278
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 119,
+          "val_auc": 0.7312
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 285,
+          "val_auc": 0.7346
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 166,
+          "val_auc": 0.7351
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 92,
+          "val_auc": 0.7308
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 87,
+          "val_auc": 0.7282
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 140,
+          "val_auc": 0.7342
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 146,
+          "val_auc": 0.7373
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 78,
+          "val_auc": 0.7313
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 72,
+          "val_auc": 0.7318
+        }
+      ],
+      "models": {
+        "logistic_regression": {
+          "test": {
+            "n": 10242,
+            "base_rate": 0.1477,
+            "roc_auc": 0.6777,
+            "pr_auc": 0.252,
+            "precision_top_10pct": 0.2871,
+            "brier": 0.1199
+          },
+          "recent": {
+            "n": 19596,
+            "base_rate": 0.1867,
+            "roc_auc": 0.6846,
+            "pr_auc": 0.2985,
+            "precision_top_10pct": 0.3638,
+            "brier": 0.146
+          }
+        },
+        "lightgbm": {
+          "test": {
+            "n": 10242,
+            "base_rate": 0.1477,
+            "roc_auc": 0.7158,
+            "pr_auc": 0.283,
+            "precision_top_10pct": 0.3379,
+            "brier": 0.1169,
+            "roc_auc_ci95": [
+              0.7026,
+              0.7285
+            ],
+            "calibration": [
+              {
+                "bin": 0,
+                "mean_predicted": 0.0212,
+                "observed": 0.0195,
+                "n": 1025
+              },
+              {
+                "bin": 1,
+                "mean_predicted": 0.0412,
+                "observed": 0.0479,
+                "n": 1024
+              },
+              {
+                "bin": 2,
+                "mean_predicted": 0.062,
+                "observed": 0.0732,
+                "n": 1024
+              },
+              {
+                "bin": 3,
+                "mean_predicted": 0.0859,
+                "observed": 0.0879,
+                "n": 1024
+              },
+              {
+                "bin": 4,
+                "mean_predicted": 0.1104,
+                "observed": 0.1094,
+                "n": 1024
+              },
+              {
+                "bin": 5,
+                "mean_predicted": 0.1346,
+                "observed": 0.1523,
+                "n": 1024
+              },
+              {
+                "bin": 6,
+                "mean_predicted": 0.16,
+                "observed": 0.1777,
+                "n": 1024
+              },
+              {
+                "bin": 7,
+                "mean_predicted": 0.1892,
+                "observed": 0.2129,
+                "n": 1024
+              },
+              {
+                "bin": 8,
+                "mean_predicted": 0.2308,
+                "observed": 0.2588,
+                "n": 1024
+              },
+              {
+                "bin": 9,
+                "mean_predicted": 0.3155,
+                "observed": 0.3376,
+                "n": 1025
+              }
+            ]
+          },
+          "recent": {
+            "n": 19596,
+            "base_rate": 0.1867,
+            "roc_auc": 0.711,
+            "pr_auc": 0.3194,
+            "precision_top_10pct": 0.3602,
+            "brier": 0.1432
+          }
+        },
+        "lightgbm_no_text": {
+          "test": {
+            "n": 10242,
+            "base_rate": 0.1477,
+            "roc_auc": 0.6996,
+            "pr_auc": 0.2627,
+            "precision_top_10pct": 0.3145,
+            "brier": 0.1184
+          },
+          "recent": {
+            "n": 19596,
+            "base_rate": 0.1867,
+            "roc_auc": 0.7008,
+            "pr_auc": 0.3089,
+            "precision_top_10pct": 0.3449,
+            "brier": 0.1443
+          }
+        },
+        "lightgbm_no_faers": {
+          "test": {
+            "n": 10242,
+            "base_rate": 0.1477,
+            "roc_auc": 0.7142,
+            "pr_auc": 0.2783,
+            "precision_top_10pct": 0.332,
+            "brier": 0.1171
+          },
+          "recent": {
+            "n": 19596,
+            "base_rate": 0.1867,
+            "roc_auc": 0.7089,
+            "pr_auc": 0.3164,
+            "precision_top_10pct": 0.35,
+            "brier": 0.1433
+          }
+        },
+        "lightgbm_no_burden": {
+          "test": {
+            "n": 10242,
+            "base_rate": 0.1477,
+            "roc_auc": 0.7051,
+            "pr_auc": 0.2618,
+            "precision_top_10pct": 0.2959,
+            "brier": 0.1182
+          },
+          "recent": {
+            "n": 19596,
+            "base_rate": 0.1867,
+            "roc_auc": 0.7038,
+            "pr_auc": 0.3057,
+            "precision_top_10pct": 0.3362,
+            "brier": 0.1438
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "n": 36286,
+          "base_rate": 0.1393
+        },
+        "test": {
+          "n": 10242,
+          "base_rate": 0.1477
+        },
+        "recent": {
+          "n": 19596,
+          "base_rate": 0.1867
+        }
+      },
+      "by_sponsor_class": {
+        "GOVERNMENT": {
+          "n": 357,
+          "roc_auc": 0.671
+        },
+        "INDUSTRY": {
+          "n": 5797,
+          "roc_auc": 0.7432
+        },
+        "OTHER": {
+          "n": 4088,
+          "roc_auc": 0.6723
+        }
+      }
+    },
+    "label_enrollment": {
+      "description": "terminated for enrollment",
+      "params": {
+        "n_estimators": 172,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "random_state": 0,
+        "verbose": -1,
+        "metric": "auc",
+        "num_leaves": 31,
+        "learning_rate": 0.03,
+        "min_child_samples": 200
+      },
+      "grid": [
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 247,
+          "val_auc": 0.7998
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 170,
+          "val_auc": 0.8035
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 89,
+          "val_auc": 0.8018
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 127,
+          "val_auc": 0.798
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 197,
+          "val_auc": 0.807
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 172,
+          "val_auc": 0.8072
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 169,
+          "val_auc": 0.798
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 91,
+          "val_auc": 0.8015
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 135,
+          "val_auc": 0.8025
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 185,
+          "val_auc": 0.8071
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 121,
+          "val_auc": 0.7954
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 61,
+          "val_auc": 0.8002
+        }
+      ],
+      "models": {
+        "logistic_regression": {
+          "test": {
+            "n": 9200,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7643,
+            "pr_auc": 0.155,
+            "precision_top_10pct": 0.1815,
+            "brier": 0.0459
+          },
+          "recent": {
+            "n": 17036,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7499,
+            "pr_auc": 0.1545,
+            "precision_top_10pct": 0.1819,
+            "brier": 0.0579
+          }
+        },
+        "lightgbm": {
+          "test": {
+            "n": 9200,
+            "base_rate": 0.0512,
+            "roc_auc": 0.791,
+            "pr_auc": 0.1575,
+            "precision_top_10pct": 0.175,
+            "brier": 0.0457,
+            "roc_auc_ci95": [
+              0.773,
+              0.8098
+            ],
+            "calibration": [
+              {
+                "bin": 0,
+                "mean_predicted": 0.0024,
+                "observed": 0.0043,
+                "n": 920
+              },
+              {
+                "bin": 1,
+                "mean_predicted": 0.0046,
+                "observed": 0.0043,
+                "n": 920
+              },
+              {
+                "bin": 2,
+                "mean_predicted": 0.0098,
+                "observed": 0.0098,
+                "n": 920
+              },
+              {
+                "bin": 3,
+                "mean_predicted": 0.0152,
+                "observed": 0.012,
+                "n": 920
+              },
+              {
+                "bin": 4,
+                "mean_predicted": 0.0213,
+                "observed": 0.0272,
+                "n": 920
+              },
+              {
+                "bin": 5,
+                "mean_predicted": 0.0301,
+                "observed": 0.0348,
+                "n": 920
+              },
+              {
+                "bin": 6,
+                "mean_predicted": 0.0438,
+                "observed": 0.0457,
+                "n": 920
+              },
+              {
+                "bin": 7,
+                "mean_predicted": 0.0653,
+                "observed": 0.087,
+                "n": 920
+              },
+              {
+                "bin": 8,
+                "mean_predicted": 0.0965,
+                "observed": 0.112,
+                "n": 920
+              },
+              {
+                "bin": 9,
+                "mean_predicted": 0.1711,
+                "observed": 0.175,
+                "n": 920
+              }
+            ]
+          },
+          "recent": {
+            "n": 17036,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7722,
+            "pr_auc": 0.157,
+            "precision_top_10pct": 0.1813,
+            "brier": 0.0575
+          }
+        },
+        "lightgbm_no_text": {
+          "test": {
+            "n": 9200,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7777,
+            "pr_auc": 0.147,
+            "precision_top_10pct": 0.1728,
+            "brier": 0.046
+          },
+          "recent": {
+            "n": 17036,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7618,
+            "pr_auc": 0.1521,
+            "precision_top_10pct": 0.1831,
+            "brier": 0.0578
+          }
+        },
+        "lightgbm_no_faers": {
+          "test": {
+            "n": 9200,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7838,
+            "pr_auc": 0.1591,
+            "precision_top_10pct": 0.1728,
+            "brier": 0.0457
+          },
+          "recent": {
+            "n": 17036,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7727,
+            "pr_auc": 0.1631,
+            "precision_top_10pct": 0.1978,
+            "brier": 0.0574
+          }
+        },
+        "lightgbm_no_burden": {
+          "test": {
+            "n": 9200,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7807,
+            "pr_auc": 0.1457,
+            "precision_top_10pct": 0.1685,
+            "brier": 0.046
+          },
+          "recent": {
+            "n": 17036,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7626,
+            "pr_auc": 0.1541,
+            "precision_top_10pct": 0.1743,
+            "brier": 0.0578
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "n": 32838,
+          "base_rate": 0.0489
+        },
+        "test": {
+          "n": 9200,
+          "base_rate": 0.0512
+        },
+        "recent": {
+          "n": 17036,
+          "base_rate": 0.0645
+        }
+      },
+      "by_sponsor_class": {
+        "GOVERNMENT": {
+          "n": 319,
+          "roc_auc": 0.7244
+        },
+        "INDUSTRY": {
+          "n": 5184,
+          "roc_auc": 0.7726
+        },
+        "OTHER": {
+          "n": 3697,
+          "roc_auc": 0.706
+        }
+      }
+    },
+    "label_safety": {
+      "description": "terminated for safety",
+      "params": {
+        "n_estimators": 202,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "random_state": 0,
+        "verbose": -1,
+        "metric": "auc",
+        "num_leaves": 63,
+        "learning_rate": 0.03,
+        "min_child_samples": 50
+      },
+      "grid": [
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 241,
+          "val_auc": 0.682
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 77,
+          "val_auc": 0.6821
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 88,
+          "val_auc": 0.6745
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 79,
+          "val_auc": 0.6888
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 121,
+          "val_auc": 0.6939
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 82,
+          "val_auc": 0.7048
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 63,
+          "val_auc": 0.6891
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 19,
+          "val_auc": 0.6793
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 202,
+          "val_auc": 0.7182
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 90,
+          "val_auc": 0.7117
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 146,
+          "val_auc": 0.6897
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 15,
+          "val_auc": 0.6999
+        }
+      ],
+      "models": {
+        "logistic_regression": {
+          "test": {
+            "n": 8816,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6691,
+            "pr_auc": 0.0187,
+            "precision_top_10pct": 0.017,
+            "brier": 0.0099
+          },
+          "recent": {
+            "n": 16175,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6757,
+            "pr_auc": 0.027,
+            "precision_top_10pct": 0.0321,
+            "brier": 0.0144
+          }
+        },
+        "lightgbm": {
+          "test": {
+            "n": 8816,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6656,
+            "pr_auc": 0.0299,
+            "precision_top_10pct": 0.0215,
+            "brier": 0.0098,
+            "roc_auc_ci95": [
+              0.6093,
+              0.7202
+            ],
+            "calibration": [
+              {
+                "bin": 0,
+                "mean_predicted": 0.0001,
+                "observed": 0.0011,
+                "n": 882
+              },
+              {
+                "bin": 1,
+                "mean_predicted": 0.0002,
+                "observed": 0.0068,
+                "n": 882
+              },
+              {
+                "bin": 2,
+                "mean_predicted": 0.0003,
+                "observed": 0.0034,
+                "n": 881
+              },
+              {
+                "bin": 3,
+                "mean_predicted": 0.0004,
+                "observed": 0.0091,
+                "n": 882
+              },
+              {
+                "bin": 4,
+                "mean_predicted": 0.0005,
+                "observed": 0.0091,
+                "n": 881
+              },
+              {
+                "bin": 5,
+                "mean_predicted": 0.0006,
+                "observed": 0.0068,
+                "n": 882
+              },
+              {
+                "bin": 6,
+                "mean_predicted": 0.0008,
+                "observed": 0.0068,
+                "n": 881
+              },
+              {
+                "bin": 7,
+                "mean_predicted": 0.0011,
+                "observed": 0.0136,
+                "n": 882
+              },
+              {
+                "bin": 8,
+                "mean_predicted": 0.0017,
+                "observed": 0.0204,
+                "n": 881
+              },
+              {
+                "bin": 9,
+                "mean_predicted": 0.0052,
+                "observed": 0.0215,
+                "n": 882
+              }
+            ]
+          },
+          "recent": {
+            "n": 16175,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6573,
+            "pr_auc": 0.026,
+            "precision_top_10pct": 0.0315,
+            "brier": 0.0146
+          }
+        },
+        "lightgbm_no_text": {
+          "test": {
+            "n": 8816,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6308,
+            "pr_auc": 0.025,
+            "precision_top_10pct": 0.0227,
+            "brier": 0.0098
+          },
+          "recent": {
+            "n": 16175,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6545,
+            "pr_auc": 0.0247,
+            "precision_top_10pct": 0.0309,
+            "brier": 0.0146
+          }
+        },
+        "lightgbm_no_faers": {
+          "test": {
+            "n": 8816,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6811,
+            "pr_auc": 0.0274,
+            "precision_top_10pct": 0.0215,
+            "brier": 0.0098
+          },
+          "recent": {
+            "n": 16175,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6448,
+            "pr_auc": 0.0242,
+            "precision_top_10pct": 0.029,
+            "brier": 0.0146
+          }
+        },
+        "lightgbm_no_burden": {
+          "test": {
+            "n": 8816,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6768,
+            "pr_auc": 0.0287,
+            "precision_top_10pct": 0.0227,
+            "brier": 0.0098
+          },
+          "recent": {
+            "n": 16175,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6479,
+            "pr_auc": 0.0245,
+            "precision_top_10pct": 0.0278,
+            "brier": 0.0146
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "n": 31536,
+          "base_rate": 0.0096
+        },
+        "test": {
+          "n": 8816,
+          "base_rate": 0.0099
+        },
+        "recent": {
+          "n": 16175,
+          "base_rate": 0.0147
+        }
+      },
+      "by_sponsor_class": {
+        "GOVERNMENT": {
+          "n": 308,
+          "roc_auc": 0.3945
+        },
+        "INDUSTRY": {
+          "n": 5124,
+          "roc_auc": 0.6978
+        },
+        "OTHER": {
+          "n": 3384,
+          "roc_auc": 0.6438
+        }
+      }
+    }
+  },
+  "top_drivers": [
+    {
+      "feature": "registration_text",
+      "mean_abs_contribution": 0.4206
+    },
+    {
+      "feature": "healthy_volunteers",
+      "mean_abs_contribution": 0.2268
+    },
+    {
+      "feature": "us_only",
+      "mean_abs_contribution": 0.1444
+    },
+    {
+      "feature": "sponsor_prior_termination_rate",
+      "mean_abs_contribution": 0.1333
+    },
+    {
+      "feature": "phase",
+      "mean_abs_contribution": 0.0795
+    },
+    {
+      "feature": "intervention_model",
+      "mean_abs_contribution": 0.0599
+    },
+    {
+      "feature": "faers_death_share",
+      "mean_abs_contribution": 0.0314
+    },
+    {
+      "feature": "criteria_count",
+      "mean_abs_contribution": 0.0313
+    },
+    {
+      "feature": "primary_purpose",
+      "mean_abs_contribution": 0.0288
+    },
+    {
+      "feature": "has_dmc",
+      "mean_abs_contribution": 0.0263
+    },
+    {
+      "feature": "min_age_years",
+      "mean_abs_contribution": 0.0242
+    },
+    {
+      "feature": "sponsor_trials_started_2y",
+      "mean_abs_contribution": 0.0232
+    },
+    {
+      "feature": "n_countries",
+      "mean_abs_contribution": 0.0225
+    },
+    {
+      "feature": "criteria_chars",
+      "mean_abs_contribution": 0.022
+    },
+    {
+      "feature": "faers_serious_share",
+      "mean_abs_contribution": 0.0208
+    }
+  ]
+}
