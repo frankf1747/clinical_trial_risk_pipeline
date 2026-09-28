@@ -11,12 +11,16 @@ FRAME = pd.DataFrame({
     "n_countries": [3, 1, None],
     "has_faers_history": [True, False, None],
     "faers_reports": [10, 0, 0],
+    "label_enrollment": [1, 0, None],
+    "text": ["a", "b", None],
 })
 
 
 def test_inputs_never_include_ids_labels_or_dates():
     assert inputs(FRAME) == ["phase", "n_countries", "has_faers_history", "faers_reports"]
     assert inputs(FRAME, drop=["faers_reports"]) == ["phase", "n_countries", "has_faers_history"]
+    assert "label_enrollment" not in inputs(FRAME)
+    assert "text" not in inputs(FRAME)
 
 
 def test_matrix_fills_missing_categories_and_makes_everything_else_numeric():

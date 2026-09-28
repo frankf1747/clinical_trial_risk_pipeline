@@ -1,0 +1,198 @@
+{
+  "models": {
+    "logistic_regression": {
+      "test": {
+        "n": 10242,
+        "base_rate": 0.1477,
+        "roc_auc": 0.6715,
+        "pr_auc": 0.2459,
+        "precision_top_10pct": 0.29,
+        "brier": 0.1203
+      },
+      "recent": {
+        "n": 19596,
+        "base_rate": 0.1867,
+        "roc_auc": 0.682,
+        "pr_auc": 0.2975,
+        "precision_top_10pct": 0.3582,
+        "brier": 0.1457
+      }
+    },
+    "lightgbm": {
+      "test": {
+        "n": 10242,
+        "base_rate": 0.1477,
+        "roc_auc": 0.6926,
+        "pr_auc": 0.2603,
+        "precision_top_10pct": 0.3115,
+        "brier": 0.1189,
+        "roc_auc_ci95": [
+          0.6805,
+          0.7056
+        ],
+        "calibration": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0183,
+            "observed": 0.0234,
+            "n": 1025
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0376,
+            "observed": 0.0586,
+            "n": 1024
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0597,
+            "observed": 0.0713,
+            "n": 1024
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0857,
+            "observed": 0.0996,
+            "n": 1024
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.1105,
+            "observed": 0.1299,
+            "n": 1024
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.1355,
+            "observed": 0.1768,
+            "n": 1024
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.1622,
+            "observed": 0.1572,
+            "n": 1024
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.1925,
+            "observed": 0.2051,
+            "n": 1024
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.2333,
+            "observed": 0.2432,
+            "n": 1024
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.326,
+            "observed": 0.3122,
+            "n": 1025
+          }
+        ]
+      },
+      "recent": {
+        "n": 19596,
+        "base_rate": 0.1867,
+        "roc_auc": 0.6946,
+        "pr_auc": 0.3057,
+        "precision_top_10pct": 0.35,
+        "brier": 0.145
+      }
+    },
+    "lightgbm_no_faers": {
+      "test": {
+        "n": 10242,
+        "base_rate": 0.1477,
+        "roc_auc": 0.6869,
+        "pr_auc": 0.2617,
+        "precision_top_10pct": 0.3145,
+        "brier": 0.1191
+      },
+      "recent": {
+        "n": 19596,
+        "base_rate": 0.1867,
+        "roc_auc": 0.6932,
+        "pr_auc": 0.3044,
+        "precision_top_10pct": 0.3459,
+        "brier": 0.1447
+      }
+    },
+    "lightgbm_no_burden": {
+      "test": {
+        "n": 10242,
+        "base_rate": 0.1477,
+        "roc_auc": 0.6676,
+        "pr_auc": 0.2395,
+        "precision_top_10pct": 0.2783,
+        "brier": 0.1209
+      },
+      "recent": {
+        "n": 19596,
+        "base_rate": 0.1867,
+        "roc_auc": 0.6697,
+        "pr_auc": 0.2826,
+        "precision_top_10pct": 0.3117,
+        "brier": 0.1471
+      }
+    }
+  },
+  "top_drivers": [
+    {
+      "feature": "healthy_volunteers",
+      "mean_abs_contribution": 0.3349
+    },
+    {
+      "feature": "us_only",
+      "mean_abs_contribution": 0.193
+    },
+    {
+      "feature": "sponsor_prior_termination_rate",
+      "mean_abs_contribution": 0.1785
+    },
+    {
+      "feature": "phase",
+      "mean_abs_contribution": 0.1268
+    },
+    {
+      "feature": "area_neoplasms",
+      "mean_abs_contribution": 0.1208
+    },
+    {
+      "feature": "sponsor_class",
+      "mean_abs_contribution": 0.1202
+    },
+    {
+      "feature": "intervention_model",
+      "mean_abs_contribution": 0.1151
+    },
+    {
+      "feature": "faers_death_share",
+      "mean_abs_contribution": 0.0865
+    },
+    {
+      "feature": "min_age_years",
+      "mean_abs_contribution": 0.0764
+    },
+    {
+      "feature": "sponsor_prior_trials",
+      "mean_abs_contribution": 0.0728
+    }
+  ],
+  "splits": {
+    "train": {
+      "n": 36286,
+      "base_rate": 0.1393
+    },
+    "test": {
+      "n": 10242,
+      "base_rate": 0.1477
+    },
+    "recent": {
+      "n": 19596,
+      "base_rate": 0.1867
+    }
+  }
+}

@@ -2,9 +2,9 @@
 import numpy as np
 import pandas as pd
 
-NOT_INPUTS = {"nct_id", "label", "split", "start_date"}   # start_date is for splitting only
+NOT_INPUTS = {"nct_id", "label", "label_enrollment", "label_safety", "split", "start_date", "text"}
 CATEGORICAL = {"phase", "allocation", "intervention_model", "primary_purpose", "masking",
-               "sponsor_class", "sex"}
+               "sponsor_class", "sex", "responsible_party"}
 FAERS = ["n_substances", "faers_reports", "faers_reports_12m", "faers_serious_share",
          "faers_death_share", "has_faers_history"]
 BURDEN = ["n_countries", "us_only", "min_age_years", "max_age_years", "healthy_volunteers",

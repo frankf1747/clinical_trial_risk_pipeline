@@ -1,4 +1,4 @@
-"""Per-trial attributes from the registration record: geography, eligibility, disease area.
+"""Per-trial attributes from the registration record: geography, eligibility, disease area, who runs it, what it measures.
 
 Countries include ones later removed from the record, so the count is every country the
 trial ever listed. Record edits can still shift it; M4 measures the effect.
@@ -43,7 +43,8 @@ def _is_criterion(x: Column) -> Column:
 
 
 def build_trial_attributes(trials: DataFrame, countries: DataFrame, eligibilities: DataFrame,
-                           browse_conditions: DataFrame) -> DataFrame:
+                           browse_conditions: DataFrame, sponsors: DataFrame,
+                           responsible_parties: DataFrame, keywords: DataFrame) -> DataFrame:
     geo = countries.groupBy("nct_id").agg(
         F.countDistinct("name").alias("n_countries"),
         F.expr("bool_and(name = 'United States')").alias("us_only"))
@@ -64,11 +65,22 @@ def build_trial_attributes(trials: DataFrame, countries: DataFrame, eligibilitie
             .groupBy("nct_id")
             .agg(*[F.max(F.col("mesh_term") == term).alias(f"area_{key}") for key, term in AREAS.items()]))
 
+    party = (responsible_parties
+             .select("nct_id", F.upper("responsible_party_type").alias("responsible_party"))
+             .dropDuplicates(["nct_id"]))
+    collab = sponsors.groupBy("nct_id").agg(
+        F.sum((F.lower("lead_or_collaborator") == "collaborator").cast("int")).alias("n_collaborators"))
+    kw = keywords.groupBy("nct_id").agg(F.count("*").alias("n_keywords"))
+
+    counts = ["n_countries", "n_collaborators", "n_keywords"]
     return (trials.select("nct_id")
             .join(geo, "nct_id", "left")
             .join(elig, "nct_id", "left")
             .join(area, "nct_id", "left")
-            .fillna(0, subset=["n_countries"])
+            .join(party, "nct_id", "left")
+            .join(collab, "nct_id", "left")
+            .join(kw, "nct_id", "left")
+            .fillna(0, subset=counts)
             .fillna(False, subset=["us_only", *[f"area_{k}" for k in AREAS]]))
 
 
@@ -77,8 +89,8 @@ if __name__ == "__main__":
     spark = get_spark("trial_attributes", cfg.mode)
     aact = cfg.path("raw", "aact")
     attrs = build_trial_attributes(spark.read.parquet(cfg.path("parquet", "trials")),
-                                   read_table(spark, aact, "countries"),
-                                   read_table(spark, aact, "eligibilities"),
-                                   read_table(spark, aact, "browse_conditions"))
+                                   *[read_table(spark, aact, t) for t in
+                                     ("countries", "eligibilities", "browse_conditions", "sponsors",
+                                      "responsible_parties", "keywords")])
     attrs.write.mode("overwrite").parquet(cfg.path("parquet", "trial_attributes"))
     print({"trials": attrs.count()})

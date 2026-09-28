@@ -8,7 +8,8 @@ from ctrisk.spark.trial_attributes import AREAS, build_trial_attributes
 @pytest.fixture(scope="module")
 def attr_rows(aact):
     trials = build_trials(aact["studies"], aact["designs"], aact["sponsors"], aact["interventions"])
-    df = build_trial_attributes(trials, aact["countries"], aact["eligibilities"], aact["browse_conditions"])
+    df = build_trial_attributes(trials, aact["countries"], aact["eligibilities"], aact["browse_conditions"],
+                                aact["sponsors"], aact["responsible_parties"], aact["keywords"])
     return df.collect()
 
 
@@ -49,6 +50,12 @@ def test_criteria_header_variants_without_a_colon_are_not_counted(spark):
         StructField("nct_id", StringType()), StructField("name", StringType())]))
     empty_conditions = spark.createDataFrame([], StructType([
         StructField("nct_id", StringType()), StructField("mesh_term", StringType())]))
+    empty_sponsors = spark.createDataFrame([], StructType([
+        StructField("nct_id", StringType()), StructField("lead_or_collaborator", StringType())]))
+    empty_parties = spark.createDataFrame([], StructType([
+        StructField("nct_id", StringType()), StructField("responsible_party_type", StringType())]))
+    empty_keywords = spark.createDataFrame([], StructType([
+        StructField("nct_id", StringType()), StructField("name", StringType())]))
     eligibilities = spark.createDataFrame(
         [("NCT100", "ALL", None, None, None,
           "Inclusion criteria~1. Adults~Exclusion Criteria :~1. Pregnancy")],
@@ -60,6 +67,15 @@ def test_criteria_header_variants_without_a_colon_are_not_counted(spark):
             StructField("healthy_volunteers", StringType()),
             StructField("criteria", StringType()),
         ]))
-    df = build_trial_attributes(trials, empty_countries, eligibilities, empty_conditions)
+    df = build_trial_attributes(trials, empty_countries, eligibilities, empty_conditions,
+                                empty_sponsors, empty_parties, empty_keywords)
     row = df.collect()[0]
     assert row.criteria_count == 2
+
+
+def test_registration_time_features(attrs):
+    a = attrs["NCT001"]
+    assert (a.responsible_party, a.n_collaborators, a.n_keywords) == ("SPONSOR", 2, 2)
+    assert attrs["NCT002"].responsible_party == "SPONSOR_INVESTIGATOR"
+    b = attrs["NCT003"]                                     # nothing registered beyond the study row
+    assert (b.responsible_party, b.n_collaborators, b.n_keywords) == (None, 0, 0)

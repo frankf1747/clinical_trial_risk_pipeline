@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes upload warehouse train score
+.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score
 
 setup:
 	uv sync
@@ -29,6 +29,9 @@ check-faers:
 
 attributes:
 	uv run python -m ctrisk.spark.trial_attributes
+
+text:
+	uv run python -m ctrisk.spark.trial_text
 
 # Mirror the Parquet Snowflake loads to GCS (~75 MB). Deleting stale objects matters:
 # Spark part-file names change every run, and leftovers would load twice.

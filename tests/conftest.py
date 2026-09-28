@@ -22,4 +22,5 @@ def aact(spark):
     return {t: read_table(spark, str(FIXTURES / "aact"), t)
             for t in ("studies", "designs", "sponsors", "interventions",
                       "intervention_other_names", "browse_interventions",
-                      "countries", "eligibilities", "browse_conditions")}
+                      "countries", "eligibilities", "browse_conditions",
+                      "responsible_parties", "keywords", "brief_summaries")}

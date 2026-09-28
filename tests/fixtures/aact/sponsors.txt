@@ -4,3 +4,7 @@ id|nct_id|agency_class|lead_or_collaborator|name
 3|NCT002|INDUSTRY|collaborator|AbbVie
 4|NCT003|NIH|lead|National Cancer Institute
 5|NCT009|Industry|lead|Pfizer
+6|NCT001|OTHER|collaborator|Some University
+7|NCT001|INDUSTRY|collaborator|Another Co
+8|NCT007|INDUSTRY|lead|Withdrawn Co
+9|NCT004|OTHER|lead|Obs Co

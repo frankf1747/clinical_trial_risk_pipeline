@@ -4,53 +4,98 @@ import pytest
 
 from ctrisk.ml.train import run
 
+SMALL_GRID = [{"num_leaves": 15, "learning_rate": 0.1, "min_child_samples": 20}]
 
-@pytest.fixture(scope="module")
-def result():
-    rng = np.random.default_rng(0)
-    n = 4000
-    signal = rng.normal(size=n)                          # the only real driver
+
+def synthetic(n=5000, seed=0):
+    rng = np.random.default_rng(seed)
+    signal = rng.normal(size=n)
     frame = pd.DataFrame({
         "nct_id": [f"NCT{i:05d}" for i in range(n)],
         "split": rng.choice(["train", "test", "recent", "score"], n, p=[0.55, 0.2, 0.15, 0.1]),
-        "start_date": pd.Timestamp("2012-01-01"),
+        "start_date": pd.to_datetime(rng.choice(pd.date_range("2008-01-01", "2014-12-31", freq="D"), n)),
         "phase": rng.choice(["PHASE1", "PHASE2", "PHASE3"], n),
+        "sponsor_class": rng.choice(["INDUSTRY", "OTHER"], n),
         "n_countries": signal,
-        "faers_reports": rng.poisson(3, n),              # noise
+        "faers_reports": rng.poisson(3, n),                       # noise
+        "text": [("slow accrual " if s > 1.5 else "large multicenter ") + rng.choice(["a", "b"]) for s in signal],
     })
-    frame["label"] = np.where(frame["split"] == "score", np.nan,
-                              (signal + rng.normal(scale=0.5, size=n) > 1).astype(float))
-    return run(frame)
+    terminated = (signal + rng.normal(scale=0.5, size=n) > 1).astype(float)
+    frame["label"] = np.where(frame["split"] == "score", np.nan, terminated)
+    reason = rng.choice(["enrollment", "safety", "business"], n, p=[0.6, 0.2, 0.2])
+    frame["label_enrollment"] = np.where(frame["label"] == 0, 0.0,
+                                         np.where((frame["label"] == 1) & (reason == "enrollment"), 1.0, np.nan))
+    frame["label_safety"] = np.where(frame["label"] == 0, 0.0,
+                                     np.where((frame["label"] == 1) & (reason == "safety"), 1.0, np.nan))
+    return frame
 
 
-def test_reports_every_model_on_test_and_recent(result):
+@pytest.fixture(scope="module")
+def result():
+    return run(synthetic(), grid=SMALL_GRID, text_min_df=1)
+
+
+def test_every_target_is_trained_and_evaluated(result):
     _, report = result
-    assert set(report["models"]) == {"logistic_regression", "lightgbm", "lightgbm_no_faers", "lightgbm_no_burden"}
-    for m in report["models"].values():
-        assert set(m) == {"test", "recent"}
-    assert report["models"]["lightgbm"]["test"]["roc_auc"] > 0.85
-    lo, hi = report["models"]["lightgbm"]["test"]["roc_auc_ci95"]
-    assert lo < report["models"]["lightgbm"]["test"]["roc_auc"] < hi
+    assert set(report["targets"]) == {"label", "label_enrollment", "label_safety"}
+    label = report["targets"]["label"]
+    assert set(label["models"]) == {"logistic_regression", "lightgbm", "lightgbm_no_text",
+                                    "lightgbm_no_faers", "lightgbm_no_burden"}
+    assert label["models"]["lightgbm"]["test"]["roc_auc"] > 0.85
+    lo, hi = label["models"]["lightgbm"]["test"]["roc_auc_ci95"]
+    assert lo < label["models"]["lightgbm"]["test"]["roc_auc"] < hi
+    assert label["params"]["n_estimators"] >= 50 and len(label["grid"]) == 1
 
 
-def test_ablation_without_the_real_driver_collapses(result):
+def test_reason_targets_exclude_other_terminations(result):
     _, report = result
-    assert report["models"]["lightgbm_no_burden"]["test"]["roc_auc"] < 0.65   # n_countries is in BURDEN
+    enrol = report["targets"]["label_enrollment"]["splits"]["train"]["n"]
+    all_ = report["targets"]["label"]["splits"]["train"]["n"]
+    assert 0 < enrol < all_
 
 
-def test_top_driver_is_the_real_signal(result):
+def test_ablations_and_subgroups(result):
     _, report = result
+    label = report["targets"]["label"]
+    assert label["models"]["lightgbm_no_burden"]["test"]["roc_auc"] < 0.8   # n_countries is the driver
+    assert set(label["by_sponsor_class"]) == {"INDUSTRY", "OTHER"}
     assert report["top_drivers"][0]["feature"] == "n_countries"
 
 
-def test_returns_the_full_model_with_its_inputs(result):
-    model, report = result
-    assert report["features"]["columns"] == ["phase", "n_countries", "faers_reports"]
-    assert hasattr(model, "predict_proba")
+def test_returns_scoring_models_for_overall_and_enrollment(result):
+    models, report = result
+    assert set(models) == {"label", "label_enrollment"}
+    assert report["features"]["columns"] == ["phase", "sponsor_class", "n_countries", "faers_reports"]
+    assert models["label"].feature_names[:4] == report["features"]["columns"]
 
 
 def test_refuses_a_train_test_or_recent_row_without_a_label():
-    frame = pd.DataFrame({"nct_id": ["A", "B"], "split": ["train", "test"], "label": [1.0, np.nan],
-                          "start_date": pd.Timestamp("2012-01-01"), "n_countries": [1.0, 2.0]})
+    frame = synthetic(200)
+    frame.loc[frame["split"] == "train", "label"] = np.nan
     with pytest.raises(ValueError, match="without a label"):
-        run(frame)
+        run(frame, grid=SMALL_GRID, text_min_df=1)
+
+
+def test_reason_targets_count_and_evaluate_only_their_own_rows(result):
+    _, report = result
+    frame = synthetic()
+    for target in ("label_enrollment", "label_safety"):
+        for split in ("train", "test", "recent"):
+            rows = frame[(frame["split"] == split) & frame[target].notna()]
+            got = report["targets"][target]["splits"][split]
+            assert got["n"] == len(rows) and got["base_rate"] == round(float(rows[target].mean()), 4)
+            if split != "train":
+                assert report["targets"][target]["models"]["lightgbm"][split]["n"] == len(rows)
+
+
+def test_text_is_only_ever_fit_on_training_rows(monkeypatch):
+    from ctrisk.ml.text import TextFeatures
+    frame = synthetic(1500)
+    frame["text"] = frame["nct_id"]                    # each document names its own trial
+    seen, original = [], TextFeatures.fit
+    monkeypatch.setattr(TextFeatures, "fit", lambda self, texts: seen.append(set(texts)) or original(self, texts))
+    run(frame, grid=SMALL_GRID, text_min_df=1)
+    train = frame["split"] == "train"
+    assert seen and all(s <= set(frame.loc[train, "nct_id"]) for s in seen)
+    inner = train & (frame["start_date"] < "2013-01-01") & frame["label"].notna()
+    assert seen[0] == set(frame.loc[inner, "nct_id"])  # tuning: inner-train rows only

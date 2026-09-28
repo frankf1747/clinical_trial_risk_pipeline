@@ -15,10 +15,11 @@ make faers                                    # -> data/parquet/faers_drug_event
 make match                                    # -> data/parquet/trial_drug_map
 make check-faers                              # our counts vs the openFDA API
 make attributes                               # -> data/parquet/trial_attributes
+make text                                     # -> data/parquet/trial_text
 make upload                                   # data/parquet -> gs://$GCP_BUCKET/parquet
 make warehouse                                # Snowflake: RAW_* -> TRIAL_FEATURES, then checks
 make train                                    # clone TRIAL_FEATURES, fit, save models/vN
-make score                                    # append active-trial scores to TRIAL_RISK_SCORES
+make score                                    # overall + enrollment risk for active trials -> TRIAL_RISK_SCORES
 make test
 ```
 

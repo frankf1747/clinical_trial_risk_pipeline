@@ -1,8 +1,10 @@
 import pytest
+from pyspark.sql import functions as F
 
 from ctrisk.gates import DataGateError
 from ctrisk.spark.clean_trials import (
     build_drug_interventions,
+    build_sponsor_starts,
     build_trials,
     check_trials,
 )
@@ -76,3 +78,47 @@ def test_gate_passes_and_summarizes(spark):
     assert check_trials(df, min_trials=10) == {
         "labeled": 10, "termination_rate": 0.1, "active": 2,
     }
+
+
+def test_stop_reason_only_for_terminated_trials(trials):
+    assert trials["NCT002"].stop_reason == "enrollment"
+    assert trials["NCT009"].stop_reason == "business"
+    assert trials["NCT001"].stop_reason is None
+
+
+def test_has_dmc(trials):
+    assert (trials["NCT001"].has_dmc, trials["NCT002"].has_dmc) == (True, False)
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("Slow accrual", "enrollment"),
+    ("Sponsor decision due to slow enrollment", "enrollment"),      # root cause wins over "sponsor"
+    ("Unable to recruit eligible patients", "enrollment"),
+    ("Company strategic decision; portfolio prioritization", "business"),
+    ("Funding ended", "business"),
+    ("Unacceptable toxicity in the first cohort", "safety"),
+    ("Terminated for futility at interim analysis", "efficacy"),
+    ("Lack of efficacy", "efficacy"),
+    ("Safety signal and low enrollment", "safety"),                   # safety outranks enrollment
+    ("PI left the institution", "other"),
+    ("", None),
+    ("Business decision, not related to safety", "business"),
+    ("Lack of efficacy; no safety concern", "efficacy"),
+    ("Dose limiting toxicities", "safety"),
+    # "harm" is inside "pharmaceutical" but \b keeps it from matching mid-word, so this stays "other"
+    ("Lack of support from pharmaceutical collaborator", "other"),
+    ("Slow enrollment, interim analysis conducted", "enrollment"),
+])
+def test_stop_reason_classifier(spark, text, expected):
+    from ctrisk.spark.clean_trials import stop_reason
+    df = spark.createDataFrame([(text,)], "why_stopped string")
+    assert df.select(stop_reason(F.col("why_stopped")).alias("r")).first().r == expected
+
+
+def test_sponsor_starts_excludes_withdrawn_observational_and_sponsorless(aact):
+    rows = {r.nct_id: (r.sponsor_name, str(r.start_date))
+            for r in build_sponsor_starts(aact["studies"], aact["sponsors"]).collect()}
+    # NCT007 (withdrawn) and NCT004 (observational) each have a lead sponsor in the fixture,
+    # so their exclusion here proves the status/study_type filters, not just the join.
+    assert set(rows) == {"NCT001", "NCT002", "NCT003", "NCT009"}
+    assert rows["NCT002"] == ("State University", "2015-06-15")

@@ -1,0 +1,3 @@
+id|nct_id|description
+1|NCT001|This study tests pembrolizumab in adults with advanced lung cancer.
+2|NCT002|Adalimumab versus placebo in rheumatoid arthritis.

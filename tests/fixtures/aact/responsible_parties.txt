@@ -1,0 +1,4 @@
+id|nct_id|responsible_party_type|name
+1|NCT001|SPONSOR|Merck
+2|NCT002|SPONSOR_INVESTIGATOR|Dr Smith
+3|NCT009|PRINCIPAL_INVESTIGATOR|Dr Jones

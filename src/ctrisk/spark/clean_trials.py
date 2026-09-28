@@ -18,6 +18,40 @@ GOVERNMENT = ["NIH", "FED", "OTHER_GOV"]
 DESIGN_COLS = ["allocation", "intervention_model", "primary_purpose", "masking"]
 TRAIN_START, TRAIN_END = "2008-01-01", "2020-12-31"
 
+# Why a trial stopped, from the free-text reason. First match wins, so a specific cause
+# ("safety") outranks a generic one ("sponsor decision").
+STOP_REASONS = [
+    ("safety", r"safety|adverse|toxic|tolerab|side effect|risk|\bs?aes?\b|death|died|fatal|\bharm"),
+    ("efficacy", (r"efficacy|futil|lack of (clinical )?(benefit|effect|response|activity)"
+                  r"|no (clinical |meaningful |obvious )?(benefit|advantage|activity|response)"
+                  r"|(did not|failed to) (meet|show|demonstrate)|endpoints? (was |were )?not met"
+                  r"|not effective|ineffective|negative (result|data|outcome)|success criteria")),
+    ("enrollment", (r"enrol|accru|recruit|slow|low number|insufficient (number|patients|subjects)"
+                    r"|few (patients|subjects|participants)|no (patients|subjects|participants)"
+                    r"|lack of (patients|subjects|participants|eligible)|unable to (recruit|identify|enrol)"
+                    r"|not enough (patients|subjects|partic)|low rate of")),
+    ("business", (r"sponsor|business|strateg|fund|financ|budget|resource|company|portfolio|commercial"
+                  r"|priorit|merger|acqui|contract"
+                  r"|development (plan|program)|discontinu\w* (the )?development|manufactur|drug supply"
+                  r"|supply of|no further need")),
+]
+
+# Free-text reasons often negate the very word that would otherwise classify them, e.g.
+# "Business decision; no safety concerns". Strip a negated clause before matching so the
+# surviving text reflects the actual reason, not the ruled-out one.
+NEGATED = (r"\b(not|no|nor|non|unrelated|without|independent of|irrespective of|regardless of|n't)\b[^.;]{0,60}?"
+           r"(safety|efficacy|tolerab|toxic|adverse|futil)[^.;]*"
+           r"|\b(favou?rable|acceptable|good|well[- ]tolerated|no new)\b[^.;]{0,20}(safety|tolerab)[^.;]*")
+
+
+def stop_reason(col: Column) -> Column:
+    raw = F.lower(F.coalesce(col, F.lit("")))
+    text = F.regexp_replace(raw, NEGATED, " ")
+    expr = F.lit("other")
+    for name, pattern in reversed(STOP_REASONS):
+        expr = F.when(text.rlike(pattern), name).otherwise(expr)
+    return F.when(F.trim(raw) == "", None).otherwise(expr)
+
 
 def read_table(spark: SparkSession, aact_dir: str, name: str) -> DataFrame:
     return spark.read.csv(f"{aact_dir}/{name}.txt", sep="|", header=True,
@@ -55,6 +89,8 @@ def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
         norm(F.col("phase")).alias("phase"),
         F.to_date("start_date").alias("start_date"),
         F.col("number_of_arms").cast("int").alias("number_of_arms"),
+        F.col("why_stopped"),
+        F.when(F.col("has_dmc").isNotNull(), F.col("has_dmc") == "t").alias("has_dmc"),
     )
     finished = (F.col("status").isin("COMPLETED", "TERMINATED")
                 & F.col("start_date").between(TRAIN_START, TRAIN_END))
@@ -65,9 +101,10 @@ def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
             .join(drug_trials, "nct_id")
             .withColumn("label", F.when(F.col("status") == "TERMINATED", 1)
                                   .when(F.col("status") == "COMPLETED", 0).cast("int"))
+            .withColumn("stop_reason", F.when(F.col("label") == 1, stop_reason(F.col("why_stopped"))))
             .join(design, "nct_id", "left")
             .join(lead_sponsor, "nct_id", "left")
-            .drop("study_type"))
+            .drop("study_type", "why_stopped"))
 
 
 def build_drug_interventions(interventions: DataFrame, trials: DataFrame) -> DataFrame:
@@ -93,7 +130,27 @@ def build_sponsor_outcomes(studies: DataFrame, sponsors: DataFrame) -> DataFrame
                    & F.col("completion_date").isNotNull())
             .select("nct_id",
                     (status == "TERMINATED").cast("int").alias("terminated"),
+                    F.to_date("start_date").alias("start_date"),
                     F.to_date("completion_date").alias("completion_date"))
+            .join(lead, "nct_id"))
+
+
+def build_sponsor_starts(studies: DataFrame, sponsors: DataFrame) -> DataFrame:
+    """Every interventional study's lead sponsor and start date, whatever its current status.
+
+    Unlike sponsor_outcomes (which needs a finished trial to know if it terminated), this
+    only needs a start date, so it also covers active trials. Withdrawn trials are excluded:
+    they were pulled before enrolling, so they were never really "concurrent" with anything.
+    """
+    status = norm(F.col("overall_status"))
+    lead = (sponsors.where(F.lower("lead_or_collaborator") == "lead")
+            .select("nct_id", F.col("name").alias("sponsor_name"))
+            .dropDuplicates(["nct_id"]))
+    return (studies
+            .where((norm(F.col("study_type")) == "INTERVENTIONAL")
+                   & (status != "WITHDRAWN")
+                   & F.col("start_date").isNotNull())
+            .select("nct_id", F.to_date("start_date").alias("start_date"))
             .join(lead, "nct_id"))
 
 
@@ -122,4 +179,6 @@ if __name__ == "__main__":
         .write.mode("overwrite").parquet(cfg.path("parquet", "drug_interventions"))
     build_sponsor_outcomes(t["studies"], t["sponsors"]) \
         .write.mode("overwrite").parquet(cfg.path("parquet", "sponsor_outcomes"))
+    build_sponsor_starts(t["studies"], t["sponsors"]) \
+        .write.mode("overwrite").parquet(cfg.path("parquet", "sponsor_starts"))
     print(summary)
