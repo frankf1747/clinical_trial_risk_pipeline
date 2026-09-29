@@ -63,13 +63,26 @@ def calibration_fit(y, score, iterations: int = 50) -> dict:
         q = 1 / (1 + np.exp(-(x + a)))
         a -= (q - y).sum() / max((q * (1 - q)).sum(), 1e-12)
     X = np.column_stack([np.ones_like(x), x])
+
+    def loglik(b):                                                # stable: log(1 + e^z) via logaddexp
+        z = X @ b
+        return float((y * z - np.logaddexp(0, z)).sum())
+
     beta = np.array([0.0, 1.0])
     for _ in range(iterations):                                   # logistic regression y ~ 1 + x
-        q = 1 / (1 + np.exp(-X @ beta))
+        q = 1 / (1 + np.exp(-np.clip(X @ beta, -700, 700)))
         hessian = X.T @ (X * (q * (1 - q))[:, None])
-        step = np.linalg.solve(hessian, X.T @ (y - q))
-        beta += step
-        if np.abs(step).max() < 1e-10:
+        try:
+            step = np.linalg.solve(hessian, X.T @ (y - q))
+        except np.linalg.LinAlgError:                             # (near-)separated: keep the last estimate
+            break
+        current, t = loglik(beta), 1.0
+        while t > 1e-8 and not loglik(beta + t * step) >= current:   # step-halving keeps Newton from overshooting
+            t /= 2
+        if t <= 1e-8:
+            break
+        beta = beta + t * step
+        if np.abs(t * step).max() < 1e-10:
             break
     return {"intercept": round(float(a), 4), "slope": round(float(beta[1]), 4)}
 

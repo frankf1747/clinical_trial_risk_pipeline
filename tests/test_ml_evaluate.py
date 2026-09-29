@@ -77,3 +77,13 @@ def test_subgroup_auc_skips_small_or_single_class_groups():
     groups = pd.Series(["big"] * 8 + [None] * 2, index=y.index)
     assert subgroup_auc(y, p, groups, min_n=5) == {"big": {"n": 8, "positives": 2, "roc_auc": 1.0}}
     assert subgroup_auc(y, p, groups, min_n=2)["big"]["n"] == 8     # 'missing' has one class: skipped
+
+
+def test_calibration_fit_converges_on_a_small_fold_with_few_positives():
+    from ctrisk.ml.evaluate import calibration_fit
+    # (score, trials, terminated): a synthetic test fold where plain Newton from slope 1 overshot to a singular Hessian
+    rows = [(6e-5, 173, 0), (3e-4, 2, 0), (6e-4, 9, 0), (9e-4, 17, 0), (3.4e-3, 9, 0), (4.2e-3, 5, 1), (0.02, 8, 2),
+            (0.12, 1, 0), (0.3, 1, 0), (0.35, 1, 0), (0.375, 2, 1), (0.49, 1, 1), (0.55, 1, 0), (0.73, 1, 0), (0.8, 1, 1)]
+    p = np.repeat([r[0] for r in rows], [r[1] for r in rows])
+    y = np.concatenate([[1] * k + [0] * (n - k) for _, n, k in rows])
+    assert abs(calibration_fit(y, p)["slope"] - 0.5882) < 0.001          # matches unpenalized sklearn
