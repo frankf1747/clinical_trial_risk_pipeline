@@ -8,7 +8,8 @@ SELECT t.nct_id,
        CASE WHEN t.label IS NULL THEN 'score'
             WHEN t.start_date < DATE '2015-01-01' THEN 'train'
             WHEN t.start_date < DATE '2017-01-01' THEN 'test'      -- resolved years: headline metric
-            ELSE 'recent' END                                      AS split,  -- 2017-2020: still censored
+            WHEN t.start_date < DATE '2021-01-01' THEN 'recent'    -- 2017-2020: still censored
+            ELSE 'later' END                                       AS split,  -- 2021+: backtest only
        -- Reason-specific targets: 1 = terminated for that reason, 0 = completed,
        -- NULL = terminated for another reason (left out of that model). stop_reason itself stays out.
        CASE WHEN t.label = 0 THEN 0 WHEN t.stop_reason = 'enrollment' THEN 1 END AS label_enrollment,

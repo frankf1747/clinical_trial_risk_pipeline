@@ -1,8 +1,10 @@
 # Clinical Trial Risk Pipeline
 
-Predicts which drug trials will be terminated early, using only what is known when they start.
+Ranks Phase 1–3 drug trials by their risk of early termination, from the registry record, the sponsor's track record before the trial started, and the drug's FAERS reporting history before the trial started.
 
-Work in progress — see `docs/specs/2026-09-26-design.md`.
+**Caveat first.** Sponsor and FAERS features are computed as of each trial's start date. The registry-record features (design, eligibility, geography, text) come from the latest version of each record, because the AACT snapshot holds only that version. Records are edited during trials, so the held-out AUC below may be inflated by post-start edits. M6 measures this (`docs/plans/2026-09-29-m6-honest-model.md`). Until then, treat the results as preliminary: AUC measures ranking, the risk percentages are calibrated only on the 2015–2016 cohort, and per-trial contributors are model contributions, not causes.
+
+Design: `docs/specs/2026-09-26-design.md`.
 
 ## Run
 
@@ -21,6 +23,9 @@ make warehouse                                # Snowflake: RAW_* -> TRIAL_FEATUR
 make train                                    # clone TRIAL_FEATURES, fit, save models/vN
 make score                                    # overall + enrollment risk for active trials -> TRIAL_RISK_SCORES
 make dashboard                                # Snowflake serving views -> docs/dashboard/index.html
+make audit-build                              # M6: registry features from archived AACT snapshots (AACT_ARCHIVES in .env)
+make audit                                    # M6: latest-record vs point-in-time AUC on 2017-2020 starts
+make backtest                                 # scores written earlier vs outcomes known now
 make test
 ```
 
@@ -84,13 +89,29 @@ The test split's higher termination rate is expected: only trials finished by th
 | Terminated for enrollment | **0.791** (0.773–0.810) | 0.764 | 17.5% vs ~5% (3.5×) |
 | Terminated for safety | 0.666 (0.609–0.720) | 0.669 | 87 test positives — too few to be conclusive |
 
-What each ingredient adds (any-termination model, test AUC): registration text +0.016, burden features +0.011, FAERS +0.002. By sponsor: industry 0.743, academic/other 0.672, government 0.671. On the censored 2017–2020 trials the AUC is 0.711, close to the headline.
+What each ingredient adds (any-termination model, test AUC): registration text +0.016, burden features +0.011, FAERS reporting history +0.002. By sponsor: industry 0.743, academic/other 0.672, government 0.671. On the censored 2017–2020 trials the AUC is 0.711, close to the headline.
+
+### Validation summary (v2, any termination)
+
+| | Train | Test | Recent |
+|---|---|---|---|
+| Start years | 2008–2014 | 2015–2016 | 2017–2020 |
+| Trials | 36,286 | 10,242 | 19,596 |
+| Terminated | ≈5,055 (13.9%) | ≈1,513 (14.8%) | ≈3,659 (18.7%) |
+| Use | fit; tuned on <2013 vs 2013–2014 | headline metrics, calibration | reported with censoring caveat |
+
+- **Outcome:** `overall_status = TERMINATED` (1) vs `COMPLETED` (0). Withdrawn, suspended, unknown-status and still-running trials carry no label and are left out of every split. The recent years over-represent early terminations, because terminated trials finish sooner.
+- **Never touched by tuning or text fitting:** the 2015–2016 rows. Tuning picks from a 12-point LightGBM grid by AUC on an inner time split inside the training years, with early stopping. TF-IDF and SVD are fit on training rows only. `tests/test_ml_train.py` pins both.
+- **Text model:** TF-IDF over word 1–2grams (min_df 20, at most 50k terms), TruncatedSVD to 64 components.
+- **Missing data:** LightGBM's native handling; median imputation plus missing indicators for the logistic baseline.
+- **Calibration (test):** Brier 0.117. Deciles in `models/v2/metrics.json` track the diagonal within 3 points; the top decile predicts 31.6% and observes 33.8%. Calibration intercept and slope, AUC by phase and by start year, and exact event counts come from the next `make train` (added in M6).
+- **Main model contributors** (`top_drivers` in `metrics.json`, `TOP_DRIVER_1..3` in `TRIAL_RISK_SCORES`) are LightGBM SHAP contributions in log-odds. They say what moved a score, not why a trial would stop. From M6 on, each per-trial contributor reads `feature=value` with its signed contribution (e.g. `healthy_volunteers=No`, +0.21), and the global list gives the direction per value.
 
 v1 (M4) scored 0.693. The v2 gain comes from registration text, trial-governance fields (DMC, responsible party, collaborators), sponsor activity, and tuning on an inner time split — after removing four leakage sources found in review (outcome measures rewritten at results posting, termination wording in summaries, negated "no safety concerns" reasons, and a sponsor feature that skewed at scoring time).
 
-Limitations: stop reasons come from free text (safety labels are ~70–80% precise); features describe the latest registry record, not the one at start; planned enrollment is excluded because the current record leaks the outcome. FAERS adds little here; the full 113 GB history is the next test of that.
+Limitations: stop reasons come from free text (safety labels are ~70–80% precise); registry features describe the latest record (see the caveat at the top); planned enrollment is excluded because the current record leaks the outcome. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence (FDA). They add little here; the full 113 GB history is the next test of that.
 
 ## Dashboard
 
-[`docs/dashboard/index.html`](docs/dashboard/index.html) is built by `make dashboard` from two Snowflake views (`VW_ACTIVE_TRIAL_RISK`, `VW_RISK_BY_AREA`) and the latest model's metrics. It shows held-out performance with confidence intervals, calibration, what each feature group adds, and the riskiest active trials with filters and their main drivers. It is one self-contained file: open it locally or serve `docs/` with GitHub Pages.
+[`docs/dashboard/index.html`](docs/dashboard/index.html) is built by `make dashboard` from two Snowflake views (`VW_ACTIVE_TRIAL_RISK`, `VW_RISK_BY_AREA`) and the latest model's metrics. It shows held-out performance with confidence intervals, calibration, what each feature group adds, and the riskiest active trials with filters and their main model contributors (feature, value and signed contribution). It carries the same latest-record caveat as this README. It is one self-contained file: open it locally or serve `docs/` with GitHub Pages.
 

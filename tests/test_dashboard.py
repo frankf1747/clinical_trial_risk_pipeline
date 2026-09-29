@@ -33,7 +33,8 @@ AREAS = pd.DataFrame({"disease_area": ["Oncology", "Other"], "trials": [2, 1], "
 def test_payload_lists_riskiest_first_and_keeps_only_real_drivers():
     data = payload(ACTIVE, AREAS, METRICS, MANIFEST, top_n=2)
     assert [t["nct"] for t in data["trials"]] == ["NCT2", "NCT3"]
-    assert data["trials"][0]["drivers"] == ["registration_text", "us_only"]
+    assert data["trials"][0]["drivers"] == [{"text": "registration_text", "contrib": None},   # pre-M6 rows
+                                            {"text": "us_only", "contrib": None}]
     s = data["summary"]
     assert (s["n_active"], s["n_listed"], s["model_version"]) == (3, 2, "v2")
     assert s["targets"]["label"]["auc"] == 0.716 and s["targets"]["label"]["positives"] == 150
@@ -51,3 +52,18 @@ def test_render_embeds_data_safely():
 
 def test_fragment_for_hosted_viewers_has_no_document_shell():
     assert not render(payload(ACTIVE, AREAS, METRICS, MANIFEST), standalone=False).startswith("<!doctype")
+
+
+def test_drivers_carry_their_value_and_contribution():
+    active = ACTIVE.assign(top_driver_1=["phase=PHASE1", "healthy_volunteers=No", "us_only=Yes"],
+                           top_driver_1_contrib=[0.05, 0.2134, 0.1], top_driver_2_contrib=[None, 0.08, None],
+                           top_driver_3_contrib=[None] * 3)
+    data = payload(active, AREAS, METRICS | {"targets": {**METRICS["targets"]}}, MANIFEST, top_n=1)
+    assert data["trials"][0]["drivers"] == [{"text": "healthy_volunteers=No", "contrib": 0.2134},
+                                            {"text": "us_only", "contrib": 0.08}]
+
+
+def test_page_never_claims_start_date_features_or_causes():
+    html = render(payload(ACTIVE, AREAS, METRICS, MANIFEST))
+    assert "built only from what was known" not in html and "Main reasons" not in html
+    assert "Main model contributors" in html and "FDA reports with deaths" not in html

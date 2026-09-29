@@ -90,7 +90,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   <header>
     <span class="eyebrow">ClinicalTrials.gov · FDA FAERS · model <span id="version"></span></span>
     <h1>Which drug trials are likely to stop early?</h1>
-    <p class="lede">A risk score for every active Phase 1–3 drug trial, built only from what was known when each trial started. Trained on trials that began 2008–2014 and tested on 2015–2016 trials whose outcomes are known.</p>
+    <p class="lede">A termination-risk ranking for every active Phase 1–3 drug trial. Trained on trials that began 2008–2014 and tested on 2015–2016 trials whose outcomes are known. Preliminary: sponsor and FAERS features use only what was known at each start date, but registry features come from the latest version of each record, which can include edits made after the trial started. A point-in-time audit is under way.</p>
     <div class="meta" id="meta"></div>
   </header>
 
@@ -99,7 +99,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   <section>
     <div class="section-head">
       <h2>How far to trust the score</h2>
-      <p class="muted">Every number below comes from held-out 2015–2016 trials the model never saw during training.</p>
+      <p class="muted">Every number below comes from held-out 2015–2016 trials the model never saw during training. They may be optimistic until the point-in-time audit confirms them.</p>
     </div>
     <div class="grid2">
       <div class="card">
@@ -118,17 +118,17 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
           <span class="key"><span class="swatch line"></span>Perfect calibration</span>
         </div>
         <div id="chart-cal"></div>
-        <p class="cap">Dots near the dashed line mean a score of 30% really does correspond to about 30% of trials stopping early.</p>
+        <p class="cap" id="cal-cap">Dots near the dashed line mean a score of 30% corresponded to about 30% of 2015–2016 trials stopping early. Calibration has not been checked on any other period.</p>
       </div>
       <div class="card">
         <h3>What each ingredient adds</h3>
         <div id="chart-abl"></div>
-        <p class="cap">Drop in test AUC when the model is retrained without each feature group. FDA adverse-event history adds little so far; this run used a sample of the reports.</p>
+        <p class="cap">Drop in test AUC when the model is retrained without each feature group. The FAERS reporting history of a trial's drugs adds little so far; this run used a sample of the reports.</p>
       </div>
       <div class="card">
-        <h3>Strongest signals</h3>
+        <h3>Main model contributors</h3>
         <div id="chart-drivers"></div>
-        <p class="cap">Average size of each feature's contribution to a test trial's score. Registration text combines the title, summary, eligibility criteria and keywords.</p>
+        <p class="cap">Average size of each feature's contribution to a test trial's score, in either direction. Hover a bar to see which values raise the score and which lower it. These describe the model, not causes of termination. Registration text combines the title, summary, eligibility criteria and keywords.</p>
       </div>
     </div>
   </section>
@@ -150,7 +150,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     <p class="count" id="count"></p>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Trial</th><th>Area</th><th>Phase</th><th>Sponsor</th><th>Termination risk</th><th>Enrollment risk</th><th>Main reasons</th></tr></thead>
+        <thead><tr><th>Trial</th><th>Area</th><th>Phase</th><th>Sponsor</th><th>Termination risk</th><th>Enrollment risk</th><th title="Features that raised this trial's score the most, with their values and contributions in log-odds. They describe the model, not why a trial would stop.">Main model contributors</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -160,11 +160,11 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   <section class="notes">
     <div>
       <h3>How the data flows</h3>
-      <p class="pipeline">AACT registry snapshot + openFDA FAERS → Spark (flatten, match drugs, build attributes) → Parquet on GCS → Snowflake (point-in-time features, checks, model snapshots) → LightGBM → scores back in Snowflake → this page.</p>
+      <p class="pipeline">AACT registry snapshot + openFDA FAERS → Spark (flatten, match drugs, build attributes) → Parquet on GCS → Snowflake (sponsor and FAERS history as of each start date, checks, model snapshots) → LightGBM → scores back in Snowflake → this page.</p>
     </div>
     <div>
       <h3>What the score does not know</h3>
-      <p>Planned enrollment and site counts are left out because the current registry record already reflects the outcome. Stop reasons come from free text. Features describe the latest registry record, not the one at the start date.</p>
+      <p>Registry features describe the latest version of each record, not the one at the start date, so the scores and held-out numbers may be inflated by later edits. Planned enrollment and site counts are left out because the current record already reflects the outcome. Stop reasons come from free text. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence. Contributors show what moved a score, not why a trial would stop.</p>
     </div>
   </section>
 </div>
@@ -181,13 +181,39 @@ const NICE = {
   has_dmc: "Safety committee", responsible_party: "Responsible party", n_collaborators: "Collaborators",
   n_keywords: "Keywords", criteria_count: "Eligibility criteria", criteria_chars: "Criteria length",
   min_age_years: "Minimum age", max_age_years: "Maximum age", number_of_arms: "Arms", n_countries: "Countries",
-  sex: "Sex", n_substances: "Drugs with FDA history", faers_reports: "FDA reports", faers_reports_12m: "FDA reports, last 12 mo",
-  faers_serious_share: "Serious FDA reports", faers_death_share: "FDA reports with deaths", has_faers_history: "FDA history",
+  sex: "Sex", n_substances: "Drugs with FAERS history", faers_reports: "FAERS reports", faers_reports_12m: "FAERS reports, last 12 mo",
+  faers_serious_share: "FAERS serious-report share", faers_death_share: "FAERS death-report share", has_faers_history: "Any FAERS history",
 };
 const nice = k => NICE[k] || (k.startsWith("area_") ? "Area: " + k.slice(5).replace(/_/g, " ") : k.replace(/_/g, " "));
 const phase = p => !p ? "—" : "Phase " + p.replace(/PHASE/g, "");
 const sponsor = s => ({ INDUSTRY: "Industry", OTHER: "Academic & other", GOVERNMENT: "Government" })[s] || s || "—";
 const pct = (v, d = 0) => v == null ? "—" : (v * 100).toFixed(d) + "%";
+const SHARES = new Set(["faers_serious_share", "faers_death_share", "sponsor_prior_termination_rate"]);
+/* a feature's value as a reader expects it: healthy_volunteers True -> "Yes", phase PHASE2 -> "Phase 2" */
+function valueText(k, v) {
+  if (v === "True" || v === "Yes") return "Yes";
+  if (v === "False" || v === "No") return "No";
+  if (v === "missing") return "not given";
+  if (k === "phase") return phase(v);
+  if (k === "sponsor_class") return sponsor(v);
+  if (SHARES.has(k) && !isNaN(+v)) return pct(+v);
+  return /^[A-Z0-9_\/]+$/.test(v) ? v.replace(/_/g, " ").toLowerCase() : v;
+}
+/* "healthy_volunteers=No" -> "Healthy volunteers: No"; old bare names ("us_only") still read */
+function driverText(s) {
+  if (s.startsWith("registration_text")) return "Registration text";
+  const i = s.indexOf("=");
+  return i < 0 ? nice(s) : `${nice(s.slice(0, i))}: ${valueText(s.slice(0, i), s.slice(i + 1))}`;
+}
+const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
+function directionText(f, dir) {
+  if (dir === undefined) return "";
+  if (dir === null) return "Net of all text components, so it has no single direction.";
+  const parts = "low_third" in dir
+    ? [["Lowest third of values", dir.low_third], ["highest third", dir.high_third]]
+    : Object.entries(dir).map(([k, v]) => [valueText(f, k), v]);
+  return "Average push, + toward termination: " + parts.filter(([, v]) => v != null).map(([k, v]) => `${esc(k)} ${signed(v)}`).join(" · ");
+}
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 /* ---------- tooltip ---------- */
@@ -282,6 +308,8 @@ document.getElementById("tiles").innerHTML = [
   el("text", { x: (l + W - r) / 2, y: H - 2, "text-anchor": "middle" }, s).textContent = "Predicted risk";
   el("text", { x: 12, y: (t + H - b) / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${(t + H - b) / 2})` }, s).textContent = "Observed";
   el("line", { x1: x(0), y1: y(0), x2: x(max), y2: y(max), stroke: "var(--ink-3)", "stroke-width": 1.5, "stroke-dasharray": "5 5" }, s);
+  if (S.calibration_fit) document.getElementById("cal-cap").textContent +=
+    ` Calibration slope ${S.calibration_fit.slope.toFixed(2)} (1 is ideal) and intercept ${S.calibration_fit.intercept.toFixed(2)} (0 is ideal).`;
   pts.forEach((p, i) => {
     el("circle", { cx: x(p.mean_predicted), cy: y(p.observed), r: 5.5, fill: "var(--accent)", stroke: "var(--panel)", "stroke-width": 2 }, s);
     const hit = el("circle", { cx: x(p.mean_predicted), cy: y(p.observed), r: 14, class: "hit" }, s);
@@ -309,11 +337,12 @@ function bars(host, items, fmt, opts = {}) {
 bars("chart-abl", [
   { label: "Registration text", value: S.ablations.text },
   { label: "Burden & eligibility", value: S.ablations.burden },
-  { label: "FDA adverse-event history", value: S.ablations.faers },
+  { label: "FAERS reporting history", value: S.ablations.faers },
 ].map(d => ({ ...d, value: Math.max(0, d.value), tip: `<b>${d.label}</b><br>AUC falls by ${d.value.toFixed(3)} without it` })),
   v => "+" + v.toFixed(3));
 bars("chart-drivers", S.top_drivers.slice(0, 8).map(d => ({ label: nice(d.feature), value: d.mean_abs_contribution,
-  tip: `<b>${esc(nice(d.feature))}</b><br>Average contribution ${d.mean_abs_contribution.toFixed(3)} (log-odds)` })),
+  tip: `<b>${esc(nice(d.feature))}</b><br>Average size of contribution ${d.mean_abs_contribution.toFixed(3)} (log-odds)` +
+    (directionText(d.feature, d.direction) ? `<br>${directionText(d.feature, d.direction)}` : "") })),
   v => v.toFixed(2));
 
 /* ---------- active trials: areas + table ---------- */
@@ -362,7 +391,7 @@ function render() {
       <td class="num"><div class="riskcell"><div class="meter"><span style="width:${(r.risk / maxRisk * 100).toFixed(1)}%"></span></div>
           <span>${pct(r.risk)}${r.decile === 10 ? '<span class="chip">Top 10%</span>' : ""}</span></div></td>
       <td class="num">${pct(r.enrollment_risk)}</td>
-      <td class="drivers">${r.drivers.map(nice).map(esc).join(" · ") || "—"}</td>
+      <td class="drivers">${r.drivers.map(d => esc(driverText(d.text)) + (d.contrib != null ? ` <span class="muted">(${signed(d.contrib)})</span>` : "")).join(" · ") || "—"}</td>
     </tr>`).join("") || `<tr><td colspan="7" class="muted">No trials match these filters. Clear a filter to see more.</td></tr>`;
   document.getElementById("more").hidden = state.shown >= f.length;
 }

@@ -30,6 +30,7 @@ def test_names_come_from_three_sources(names):
         ("NCT002", "Adalimumab"),
         ("NCT003", "Metformin 500 mg"),
         ("NCT009", "Ibuprofen"),
+        ("NCT010", "Aspirin"),
     }
 
 

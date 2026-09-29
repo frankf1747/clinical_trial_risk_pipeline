@@ -1,6 +1,11 @@
 -- Views for the people who use the scores. Built by `make dashboard`, after `make score`.
 -- Portable SQL: tests run it on DuckDB.
 
+-- Scores written before M6 have no contribution columns; add them so the view reads every version.
+ALTER TABLE TRIAL_RISK_SCORES ADD COLUMN IF NOT EXISTS top_driver_1_contrib FLOAT;
+ALTER TABLE TRIAL_RISK_SCORES ADD COLUMN IF NOT EXISTS top_driver_2_contrib FLOAT;
+ALTER TABLE TRIAL_RISK_SCORES ADD COLUMN IF NOT EXISTS top_driver_3_contrib FLOAT;
+
 -- Each active trial with its most recent score and what a reviewer needs to recognize it.
 -- Disease area is the first match in a fixed order, so every trial lands in exactly one.
 CREATE OR REPLACE VIEW VW_ACTIVE_TRIAL_RISK AS
@@ -25,7 +30,8 @@ SELECT l.nct_id, t.brief_title, t.phase, t.sponsor_class, f.start_date,
             WHEN f.area_blood THEN 'Hematology'
             ELSE 'Other' END                              AS disease_area,
        l.risk_score, l.risk_decile, l.enrollment_risk_score,
-       l.top_driver_1, l.top_driver_2, l.top_driver_3, l.model_version, l.scored_at
+       l.top_driver_1, l.top_driver_2, l.top_driver_3,
+       l.top_driver_1_contrib, l.top_driver_2_contrib, l.top_driver_3_contrib, l.model_version, l.scored_at
 FROM latest l
 JOIN TRIAL_FEATURES f ON f.nct_id = l.nct_id AND f.split = 'score'
 JOIN RAW_TRIALS t     ON t.nct_id = l.nct_id

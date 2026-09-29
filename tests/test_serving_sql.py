@@ -49,6 +49,11 @@ def test_one_disease_area_per_trial_in_a_fixed_order(db):
     assert got == {"A": "Oncology", "B": "Respiratory"}
 
 
+def test_old_scores_read_with_empty_contributions(db):
+    got = {r["nct_id"]: r for r in rows(db, "SELECT * FROM VW_ACTIVE_TRIAL_RISK")}
+    assert got["A"]["top_driver_1"] == "registration_text" and got["A"]["top_driver_1_contrib"] is None
+
+
 def test_area_summary(db):
     got = {r["disease_area"]: r for r in rows(db, "SELECT * FROM VW_RISK_BY_AREA")}
     assert got["Oncology"]["trials"] == 1 and got["Oncology"]["top_decile_trials"] == 1

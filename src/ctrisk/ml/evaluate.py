@@ -13,6 +13,7 @@ def precision_at_top(y, score, frac: float = 0.10) -> float:
 def metrics(y, score) -> dict:
     y, score = np.asarray(y, dtype=float), np.asarray(score, dtype=float)
     return {"n": len(y),
+            "positives": int(y.sum()),
             "base_rate": round(float(y.mean()), 4),
             "roc_auc": round(float(roc_auc_score(y, score)), 4),
             "pr_auc": round(float(average_precision_score(y, score)), 4),
@@ -40,3 +41,46 @@ def calibration(y, score, bins: int = 10) -> list[dict]:
     grouped = df.groupby("bin").agg(mean_predicted=("p", "mean"), observed=("y", "mean"), n=("y", "size"))
     return [{"bin": int(b), "mean_predicted": round(r.mean_predicted, 4),
              "observed": round(r.observed, 4), "n": int(r.n)} for b, r in grouped.iterrows()]
+
+
+def _logit(score) -> np.ndarray:
+    p = np.clip(np.asarray(score, dtype=float), 1e-6, 1 - 1e-6)
+    return np.log(p / (1 - p))
+
+
+def calibration_fit(y, score, iterations: int = 50) -> dict:
+    """Calibration intercept and slope on the logit scale (Steyerberg; Van Calster et al. 2019).
+
+    intercept: calibration-in-the-large, the shift that makes mean predicted risk match the observed
+               rate with the slope held at 1. 0 is ideal; > 0 means risk is under-predicted overall.
+    slope:     from regressing the outcome on logit(score). 1 is ideal; < 1 means the scores are more
+               extreme than the outcomes justify (too confident), > 1 too timid.
+    Both by Newton's method: two parameters, no regularization, no extra dependency.
+    """
+    y, x = np.asarray(y, dtype=float), _logit(score)
+    a = 0.0
+    for _ in range(iterations):                                   # intercept with offset x, slope fixed
+        q = 1 / (1 + np.exp(-(x + a)))
+        a -= (q - y).sum() / max((q * (1 - q)).sum(), 1e-12)
+    X = np.column_stack([np.ones_like(x), x])
+    beta = np.array([0.0, 1.0])
+    for _ in range(iterations):                                   # logistic regression y ~ 1 + x
+        q = 1 / (1 + np.exp(-X @ beta))
+        hessian = X.T @ (X * (q * (1 - q))[:, None])
+        step = np.linalg.solve(hessian, X.T @ (y - q))
+        beta += step
+        if np.abs(step).max() < 1e-10:
+            break
+    return {"intercept": round(float(a), 4), "slope": round(float(beta[1]), 4)}
+
+
+def subgroup_auc(y: pd.Series, score: pd.Series, groups: pd.Series, min_n: int = 100) -> dict:
+    """ROC AUC per group, for groups with at least min_n rows and both outcomes. Inputs share an index."""
+    out = {}
+    labels = groups.astype(object).where(groups.notna(), "missing").astype(str)
+    for key in sorted(labels.unique()):
+        idx = labels.index[labels == key]
+        if len(idx) >= min_n and y[idx].nunique() > 1:
+            out[key] = {"n": len(idx), "positives": int(y[idx].sum()),
+                        "roc_auc": round(float(roc_auc_score(y[idx], score[idx])), 4)}
+    return out

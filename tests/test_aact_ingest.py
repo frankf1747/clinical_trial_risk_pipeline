@@ -27,3 +27,17 @@ def test_missing_table_fails_loudly(tmp_path):
 
     with pytest.raises(FileNotFoundError, match="designs.txt"):
         fetch(str(zip_path), tmp_path / "aact")
+
+
+def test_each_destination_downloads_its_own_zip(tmp_path, monkeypatch):
+    from ctrisk.ingest import aact
+    targets = []
+
+    def fake_download(url, target):
+        targets.append(target)
+        make_zip(target, [f"{t}.txt" for t in TABLES])
+        return target
+    monkeypatch.setattr(aact, "download", fake_download)
+    fetch("https://example.org/2017.zip", tmp_path / "2017-01-01")
+    fetch("https://example.org/2018.zip", tmp_path / "2018-01-01")
+    assert targets == [tmp_path / "2017-01-01.zip", tmp_path / "2018-01-01.zip"]

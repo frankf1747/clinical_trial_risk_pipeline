@@ -24,7 +24,8 @@ def payload(active: pd.DataFrame, areas: pd.DataFrame, metrics: dict, manifest: 
     label = targets["label"]["models"]
     full = label["lightgbm"]["test"]["roc_auc"]
     top = active.sort_values("risk_score", ascending=False).head(top_n)
-    drivers = top[["top_driver_1", "top_driver_2", "top_driver_3"]].to_numpy()
+    drivers = top.reindex(columns=[f"top_driver_{n}" for n in (1, 2, 3)]).to_numpy()
+    contribs = top.reindex(columns=[f"top_driver_{n}_contrib" for n in (1, 2, 3)]).to_numpy()   # NaN before M6
     return {
         "summary": {
             "model_version": f"v{manifest['version']}", "git": manifest["git"],
@@ -36,6 +37,7 @@ def payload(active: pd.DataFrame, areas: pd.DataFrame, metrics: dict, manifest: 
             "ablations": {k: round(full - label[f"lightgbm_no_{k}"]["test"]["roc_auc"], 4)
                           for k in ("text", "burden", "faers")},
             "calibration": label["lightgbm"]["test"]["calibration"],
+            "calibration_fit": label["lightgbm"]["test"].get("calibration_fit"),
             "top_drivers": metrics["top_drivers"],
         },
         "areas": [{"area": r.disease_area, "trials": int(r.trials), "avg_risk": round(float(r.avg_risk), 4),
@@ -44,8 +46,9 @@ def payload(active: pd.DataFrame, areas: pd.DataFrame, metrics: dict, manifest: 
                     "phase": r.phase, "sponsor": r.sponsor_class, "area": r.disease_area,
                     "risk": round(float(r.risk_score), 4), "decile": int(r.risk_decile),
                     "enrollment_risk": round(float(r.enrollment_risk_score), 4),
-                    "drivers": [d for d in ds if isinstance(d, str)]}
-                   for r, ds in zip(top.itertuples(), drivers, strict=True)],
+                    "drivers": [{"text": d, "contrib": None if pd.isna(c) else round(float(c), 4)}
+                                for d, c in zip(ds, cs, strict=True) if isinstance(d, str)]}
+                   for r, ds, cs in zip(top.itertuples(), drivers, contribs, strict=True)],
     }
 
 

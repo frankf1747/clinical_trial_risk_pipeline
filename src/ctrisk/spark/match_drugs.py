@@ -6,7 +6,7 @@ from pyspark.sql import types as T
 from ctrisk.config import load_config
 from ctrisk.drugnames import is_specific, match_substances, normalize
 from ctrisk.gates import DataGateError
-from ctrisk.spark.clean_trials import read_table
+from ctrisk.spark.clean_trials import MODEL_END, read_table
 from ctrisk.spark.session import get_spark
 
 
@@ -42,7 +42,8 @@ def build_trial_drug_map(names: DataFrame, vocab: frozenset[str]) -> DataFrame:
 
 
 def check_match_rate(trials: DataFrame, trial_drug_map: DataFrame, min_rate: float) -> dict:
-    labeled = trials.where(F.col("label").isNotNull()).select("nct_id")
+    """Share of the modelled trials (labeled, started before MODEL_END) with at least one matched drug."""
+    labeled = trials.where(F.col("label").isNotNull() & (F.col("start_date") < MODEL_END)).select("nct_id")
     total = labeled.count()
     matched = labeled.join(trial_drug_map, "nct_id", "left_semi").count()
     rate = matched / total if total else 0.0
