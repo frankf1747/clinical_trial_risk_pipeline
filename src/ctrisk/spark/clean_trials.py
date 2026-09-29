@@ -89,6 +89,7 @@ def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
         norm(F.col("phase")).alias("phase"),
         F.to_date("start_date").alias("start_date"),
         F.col("number_of_arms").cast("int").alias("number_of_arms"),
+        F.col("brief_title"),                               # display only, never a model input
         F.col("why_stopped"),
         F.when(F.col("has_dmc").isNotNull(), F.col("has_dmc") == "t").alias("has_dmc"),
     )

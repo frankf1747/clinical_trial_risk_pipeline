@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score
+.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score dashboard
 
 setup:
 	uv sync
@@ -49,3 +49,7 @@ train:
 
 score:
 	uv run python -m ctrisk.ml.score
+
+# Serving views in Snowflake + docs/dashboard/index.html (after `make score`)
+dashboard:
+	uv run python -m ctrisk.serving.dashboard

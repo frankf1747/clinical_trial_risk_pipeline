@@ -122,3 +122,7 @@ def test_sponsor_starts_excludes_withdrawn_observational_and_sponsorless(aact):
     # so their exclusion here proves the status/study_type filters, not just the join.
     assert set(rows) == {"NCT001", "NCT002", "NCT003", "NCT009"}
     assert rows["NCT002"] == ("State University", "2015-06-15")
+
+
+def test_brief_title_is_carried_for_display(trials):
+    assert trials["NCT001"].brief_title == "Pembrolizumab in Lung Cancer"

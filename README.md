@@ -20,6 +20,7 @@ make upload                                   # data/parquet -> gs://$GCP_BUCKET
 make warehouse                                # Snowflake: RAW_* -> TRIAL_FEATURES, then checks
 make train                                    # clone TRIAL_FEATURES, fit, save models/vN
 make score                                    # overall + enrollment risk for active trials -> TRIAL_RISK_SCORES
+make dashboard                                # Snowflake serving views -> docs/dashboard/index.html
 make test
 ```
 
@@ -88,4 +89,8 @@ What each ingredient adds (any-termination model, test AUC): registration text +
 v1 (M4) scored 0.693. The v2 gain comes from registration text, trial-governance fields (DMC, responsible party, collaborators), sponsor activity, and tuning on an inner time split — after removing four leakage sources found in review (outcome measures rewritten at results posting, termination wording in summaries, negated "no safety concerns" reasons, and a sponsor feature that skewed at scoring time).
 
 Limitations: stop reasons come from free text (safety labels are ~70–80% precise); features describe the latest registry record, not the one at start; planned enrollment is excluded because the current record leaks the outcome. FAERS adds little here; the full 113 GB history is the next test of that.
+
+## Dashboard
+
+[`docs/dashboard/index.html`](docs/dashboard/index.html) is built by `make dashboard` from two Snowflake views (`VW_ACTIVE_TRIAL_RISK`, `VW_RISK_BY_AREA`) and the latest model's metrics. It shows held-out performance with confidence intervals, calibration, what each feature group adds, and the riskiest active trials with filters and their main drivers. It is one self-contained file: open it locally or serve `docs/` with GitHub Pages.
 

@@ -1,0 +1,370 @@
+<title>Clinical Trial Risk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: a registry worksheet. Summary figures first, then how far to trust the model, then the trials to review. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #14181f; --ink-2: #4a5261; --ink-3: #7a8291;
+  --rule: #e2e5ea; --grid: #eceef2; --accent: #2a78d6; --accent-soft: #e3eefb; --base: #eb6834;
+  --serious: #c2410c; --serious-soft: #fdebe3; --focus: #2a78d6;
+  --sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --panel: #1a1d23; --ink: #f1f3f6; --ink-2: #b9bfca; --ink-3: #8a92a0;
+    --rule: #2c3038; --grid: #262a31; --accent: #3987e5; --accent-soft: #1d2a3b; --base: #d95926;
+    --serious: #f0875a; --serious-soft: #3a241b; --focus: #6da7ec; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --panel: #1a1d23; --ink: #f1f3f6; --ink-2: #b9bfca; --ink-3: #8a92a0;
+  --rule: #2c3038; --grid: #262a31; --accent: #3987e5; --accent-soft: #1d2a3b; --base: #d95926;
+  --serious: #f0875a; --serious-soft: #3a241b; --focus: #6da7ec; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; display: grid; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(26px, 4vw, 34px); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.lede { color: var(--ink-2); font-size: 16px; }
+.muted { color: var(--ink-3); }
+.mono { font-family: var(--mono); }
+header { display: grid; gap: 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 400 12.5px/1.4 var(--mono); color: var(--ink-3); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.tile .label { font-size: 13px; color: var(--ink-2); }
+.tile .value { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+.tile .note { font-size: 12.5px; color: var(--ink-3); }
+section { display: grid; gap: 14px; }
+.section-head { display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px 14px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.card p.cap { font-size: 13px; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--ink-2); }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.swatch.line { width: 16px; height: 0; border-top: 2px dashed var(--ink-3); border-radius: 0; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--ink-2); font: 11.5px var(--sans); }
+svg .tick { fill: var(--ink-3); font: 11px var(--mono); }
+svg .gridline { stroke: var(--grid); stroke-width: 1; }
+svg .axis { stroke: var(--rule); stroke-width: 1; }
+svg .hit { fill: transparent; cursor: default; }
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12.5px; line-height: 1.4; padding: 7px 9px; border-radius: 6px; max-width: 260px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); }
+.tip b { font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.control { display: grid; gap: 4px; font-size: 12px; color: var(--ink-3); }
+select, input[type="search"] { font: 14px var(--sans); color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 7px; padding: 7px 9px; min-width: 0; }
+input[type="search"] { width: min(260px, 100%); }
+button { font: 600 13px var(--sans); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 7px; padding: 8px 14px; cursor: pointer; }
+button.link { background: none; padding: 0; font-weight: 500; text-decoration: underline; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 860px; font-size: 13.5px; }
+th { text-align: left; font: 500 11.5px/1.2 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); padding: 11px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.trial-id { font: 500 12.5px var(--mono); }
+.trial-title { color: var(--ink); display: block; margin-top: 2px; max-width: 46ch; }
+.riskcell { display: grid; grid-template-columns: 64px auto; align-items: center; gap: 8px; }
+.meter { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.chip { display: inline-block; font: 600 11px/1 var(--sans); color: var(--serious); background: var(--serious-soft); border-radius: 999px; padding: 4px 7px; margin-left: 6px; white-space: nowrap; }
+.drivers { color: var(--ink-2); font-size: 12.5px; }
+.count { font-size: 13px; color: var(--ink-2); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 28px; font-size: 13.5px; color: var(--ink-2); }
+.notes h3 { color: var(--ink); margin-bottom: 4px; }
+.pipeline { font: 12.5px/1.6 var(--mono); color: var(--ink-2); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">ClinicalTrials.gov · FDA FAERS · model <span id="version"></span></span>
+    <h1>Which drug trials are likely to stop early?</h1>
+    <p class="lede">A risk score for every active Phase 1–3 drug trial, built only from what was known when each trial started. Trained on trials that began 2008–2014 and tested on 2015–2016 trials whose outcomes are known.</p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section>
+    <div class="section-head">
+      <h2>How far to trust the score</h2>
+      <p class="muted">Every number below comes from held-out 2015–2016 trials the model never saw during training.</p>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Ranking quality (ROC AUC)</h3>
+        <div class="legend">
+          <span class="key"><span class="swatch" style="background:var(--accent)"></span>LightGBM, 95% CI</span>
+          <span class="key"><span class="swatch" style="border:2px solid var(--base);width:11px;height:11px"></span>Logistic baseline</span>
+        </div>
+        <div id="chart-perf"></div>
+        <p class="cap">0.5 is a coin flip. Enrollment-driven terminations are the most predictable. Safety terminations are too rare in the test years for a firm estimate.</p>
+      </div>
+      <div class="card">
+        <h3>Calibration: predicted vs observed termination rate</h3>
+        <div class="legend">
+          <span class="key"><span class="swatch" style="background:var(--accent)"></span>Test trials, one dot per tenth of scores</span>
+          <span class="key"><span class="swatch line"></span>Perfect calibration</span>
+        </div>
+        <div id="chart-cal"></div>
+        <p class="cap">Dots near the dashed line mean a score of 30% really does correspond to about 30% of trials stopping early.</p>
+      </div>
+      <div class="card">
+        <h3>What each ingredient adds</h3>
+        <div id="chart-abl"></div>
+        <p class="cap">Drop in test AUC when the model is retrained without each feature group. FDA adverse-event history adds little so far; this run used a sample of the reports.</p>
+      </div>
+      <div class="card">
+        <h3>Strongest signals</h3>
+        <div id="chart-drivers"></div>
+        <p class="cap">Average size of each feature's contribution to a test trial's score. Registration text combines the title, summary, eligibility criteria and keywords.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Active trials to review</h2>
+      <p class="muted">Average predicted risk of active trials by disease area. Select a bar to filter the list.</p>
+    </div>
+    <div class="card"><div id="chart-areas" style="max-width:760px"></div></div>
+
+    <div class="controls">
+      <label class="control" for="f-area">Disease area<select id="f-area"></select></label>
+      <label class="control" for="f-phase">Phase<select id="f-phase"></select></label>
+      <label class="control" for="f-sponsor">Sponsor<select id="f-sponsor"></select></label>
+      <label class="control" for="f-search">Search<input id="f-search" type="search" placeholder="NCT ID, drug or condition"></label>
+      <button class="link" id="f-clear" type="button">Clear filters</button>
+    </div>
+    <p class="count" id="count"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Trial</th><th>Area</th><th>Phase</th><th>Sponsor</th><th>Termination risk</th><th>Enrollment risk</th><th>Main reasons</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div><button id="more" type="button">Show 25 more</button></div>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h3>How the data flows</h3>
+      <p class="pipeline">AACT registry snapshot + openFDA FAERS → Spark (flatten, match drugs, build attributes) → Parquet on GCS → Snowflake (point-in-time features, checks, model snapshots) → LightGBM → scores back in Snowflake → this page.</p>
+    </div>
+    <div>
+      <h3>What the score does not know</h3>
+      <p>Planned enrollment and site counts are left out because the current registry record already reflects the outcome. Stop reasons come from free text. Features describe the latest registry record, not the one at the start date.</p>
+    </div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = __DATA__;
+
+const NICE = {
+  registration_text: "Registration text", healthy_volunteers: "Healthy volunteers", us_only: "US-only sites",
+  sponsor_prior_termination_rate: "Sponsor's past terminations", sponsor_prior_trials: "Sponsor's past trials",
+  sponsor_trials_started_2y: "Sponsor's recent starts", sponsor_class: "Sponsor type", phase: "Phase",
+  intervention_model: "Design model", primary_purpose: "Purpose", allocation: "Allocation", masking: "Blinding",
+  has_dmc: "Safety committee", responsible_party: "Responsible party", n_collaborators: "Collaborators",
+  n_keywords: "Keywords", criteria_count: "Eligibility criteria", criteria_chars: "Criteria length",
+  min_age_years: "Minimum age", max_age_years: "Maximum age", number_of_arms: "Arms", n_countries: "Countries",
+  sex: "Sex", n_substances: "Drugs with FDA history", faers_reports: "FDA reports", faers_reports_12m: "FDA reports, last 12 mo",
+  faers_serious_share: "Serious FDA reports", faers_death_share: "FDA reports with deaths", has_faers_history: "FDA history",
+};
+const nice = k => NICE[k] || (k.startsWith("area_") ? "Area: " + k.slice(5).replace(/_/g, " ") : k.replace(/_/g, " "));
+const phase = p => !p ? "—" : "Phase " + p.replace(/PHASE/g, "");
+const sponsor = s => ({ INDUSTRY: "Industry", OTHER: "Academic & other", GOVERNMENT: "Government" })[s] || s || "—";
+const pct = (v, d = 0) => v == null ? "—" : (v * 100).toFixed(d) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+/* ---------- tooltip ---------- */
+const tip = document.getElementById("tip");
+function showTip(e, html) {
+  tip.innerHTML = html; tip.hidden = false;
+  const r = tip.getBoundingClientRect(), pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => { tip.hidden = true; };
+
+/* ---------- tiny SVG helpers ---------- */
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function svg(w, h, host) {
+  const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" });
+  document.getElementById(host).appendChild(s);
+  return s;
+}
+const scale = (d0, d1, r0, r1) => v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+/* draw at the container's real width so text stays 11-12px instead of being stretched */
+const widthOf = host => Math.max(300, Math.min(760, document.getElementById(host).clientWidth || 520));
+function hover(node, html) {
+  node.addEventListener("mousemove", e => showTip(e, html));
+  node.addEventListener("mouseleave", hideTip);
+}
+
+/* ---------- header and tiles ---------- */
+const S = DATA.summary, T = S.targets;
+document.getElementById("version").textContent = S.model_version;
+document.getElementById("meta").innerHTML = [
+  `trained ${esc(S.trained_at)}`, `scored ${esc(S.scored_at)}`, `git ${esc(S.git)}`, `training snapshot ${esc(S.snowflake_clone)}`,
+].map(s => `<span>${s}</span>`).join("");
+document.getElementById("tiles").innerHTML = [
+  ["Held-out ROC AUC, any termination", T.label.auc.toFixed(3), `95% CI ${T.label.ci[0].toFixed(3)}–${T.label.ci[1].toFixed(3)} · baseline ${T.label.baseline.toFixed(3)}`],
+  ["Riskiest tenth that stopped early", pct(T.label.top10), `${(T.label.top10 / T.label.base_rate).toFixed(1)}× the ${pct(T.label.base_rate, 1)} average`],
+  ["ROC AUC, enrollment-driven terminations", T.label_enrollment.auc.toFixed(3), `95% CI ${T.label_enrollment.ci[0].toFixed(3)}–${T.label_enrollment.ci[1].toFixed(3)}`],
+  ["Active trials scored", S.n_active.toLocaleString(), `${S.n_listed.toLocaleString()} riskiest listed below`],
+].map(([l, v, n]) => `<div class="tile"><span class="label">${l}</span><span class="value">${v}</span><span class="note">${n}</span></div>`).join("");
+
+/* ---------- chart: performance by target (dot + CI) ---------- */
+(function () {
+  const rows = [
+    { name: "Any termination", ...T.label, bold: true },
+    ...S.by_sponsor.map(s => ({ name: "· " + sponsor(s.key), auc: s.auc, n: s.n, sub: true })),
+    { name: "Enrollment-driven", ...T.label_enrollment, bold: true },
+    { name: "Safety-driven", ...T.label_safety, bold: true },
+  ];
+  const W = widthOf("chart-perf"), left = 136, right = 16, rowH = 30, top = 8, H = top + rows.length * rowH + 28;
+  const x = scale(0.5, 0.85, left, W - right);
+  const s = svg(W, H, "chart-perf");
+  [0.5, 0.6, 0.7, 0.8].forEach(t => {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: H - 24, class: "gridline" }, s);
+    el("text", { x: x(t), y: H - 8, "text-anchor": "middle", class: "tick" }, s).textContent = t.toFixed(1);
+  });
+  el("text", { x: x(0.5) + 4, y: top + 10, class: "tick" }, s).textContent = "chance";
+  rows.forEach((r, i) => {
+    const y = top + i * rowH + rowH / 2;
+    const label = el("text", { x: left - 10, y: y + 4, "text-anchor": "end" }, s);
+    label.textContent = r.name;
+    if (r.bold) label.setAttribute("style", "font-weight:600;fill:var(--ink)");
+    if (r.ci && r.ci.length) el("line", { x1: x(r.ci[0]), x2: x(r.ci[1]), y1: y, y2: y, stroke: "var(--accent)", "stroke-width": 2, "stroke-linecap": "round" }, s);
+    if (r.baseline != null) el("circle", { cx: x(r.baseline), cy: y, r: 4.5, fill: "var(--panel)", stroke: "var(--base)", "stroke-width": 2 }, s);
+    el("circle", { cx: x(r.auc), cy: y, r: r.sub ? 4 : 5.5, fill: "var(--accent)", stroke: "var(--panel)", "stroke-width": 2 }, s);
+    const hit = el("rect", { x: left, y: y - rowH / 2, width: W - left - right, height: rowH, class: "hit" }, s);
+    hover(hit, `<b>${esc(r.name.replace("· ", ""))}</b><br>AUC ${r.auc.toFixed(3)}` +
+      (r.ci && r.ci.length ? ` (95% CI ${r.ci[0].toFixed(3)}–${r.ci[1].toFixed(3)})` : "") +
+      (r.baseline != null ? `<br>Logistic baseline ${r.baseline.toFixed(3)}` : "") +
+      (r.positives != null ? `<br>${r.positives.toLocaleString()} terminations among ${r.n.toLocaleString()} test trials` : `<br>${r.n.toLocaleString()} test trials`));
+  });
+})();
+
+/* ---------- chart: calibration ---------- */
+(function () {
+  const pts = S.calibration, W = widthOf("chart-cal"), H = Math.round(Math.min(320, W * 0.62)), l = 46, r = 14, t = 10, b = 36;
+  const max = Math.ceil(Math.max(...pts.map(p => Math.max(p.mean_predicted, p.observed))) * 10) / 10;
+  const x = scale(0, max, l, W - r), y = scale(0, max, H - b, t);
+  const s = svg(W, H, "chart-cal");
+  for (let v = 0; v <= max + 1e-9; v += 0.1) {
+    el("line", { x1: l, x2: W - r, y1: y(v), y2: y(v), class: "gridline" }, s);
+    el("text", { x: l - 8, y: y(v) + 4, "text-anchor": "end", class: "tick" }, s).textContent = Math.round(v * 100) + "%";
+    el("text", { x: x(v), y: H - b + 18, "text-anchor": "middle", class: "tick" }, s).textContent = Math.round(v * 100) + "%";
+  }
+  el("text", { x: (l + W - r) / 2, y: H - 2, "text-anchor": "middle" }, s).textContent = "Predicted risk";
+  el("text", { x: 12, y: (t + H - b) / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${(t + H - b) / 2})` }, s).textContent = "Observed";
+  el("line", { x1: x(0), y1: y(0), x2: x(max), y2: y(max), stroke: "var(--ink-3)", "stroke-width": 1.5, "stroke-dasharray": "5 5" }, s);
+  pts.forEach((p, i) => {
+    el("circle", { cx: x(p.mean_predicted), cy: y(p.observed), r: 5.5, fill: "var(--accent)", stroke: "var(--panel)", "stroke-width": 2 }, s);
+    const hit = el("circle", { cx: x(p.mean_predicted), cy: y(p.observed), r: 14, class: "hit" }, s);
+    hover(hit, `<b>Score tenth ${i + 1} of 10</b><br>Predicted ${pct(p.mean_predicted, 1)} · observed ${pct(p.observed, 1)}<br>${p.n.toLocaleString()} test trials`);
+  });
+})();
+
+/* ---------- horizontal bar chart (magnitudes from zero) ---------- */
+function bars(host, items, fmt, opts = {}) {
+  const W = widthOf(host), left = opts.left || 170, right = 64, rowH = opts.rowH || 28, top = 4;
+  const H = top + items.length * rowH + 4;
+  const max = Math.max(...items.map(d => d.value)) || 1;
+  const x = scale(0, max, left, W - right);
+  const s = svg(W, H, host);
+  items.forEach((d, i) => {
+    const y = top + i * rowH, bh = rowH - 12, w = Math.max(2, x(d.value) - left);
+    el("text", { x: left - 10, y: y + rowH / 2 + 2, "text-anchor": "end" }, s).textContent = d.label;
+    el("rect", { x: left, y: y + 6, width: w, height: bh, rx: Math.min(4, w / 2), fill: "var(--accent)" }, s);
+    el("text", { x: left + w + 6, y: y + rowH / 2 + 2, class: "tick" }, s).textContent = fmt(d.value);
+    const hit = el("rect", { x: 0, y, width: W, height: rowH, class: "hit" }, s);
+    if (d.tip) hover(hit, d.tip);
+    if (opts.onClick) { hit.style.cursor = "pointer"; hit.addEventListener("click", () => opts.onClick(d)); }
+  });
+}
+bars("chart-abl", [
+  { label: "Registration text", value: S.ablations.text },
+  { label: "Burden & eligibility", value: S.ablations.burden },
+  { label: "FDA adverse-event history", value: S.ablations.faers },
+].map(d => ({ ...d, value: Math.max(0, d.value), tip: `<b>${d.label}</b><br>AUC falls by ${d.value.toFixed(3)} without it` })),
+  v => "+" + v.toFixed(3));
+bars("chart-drivers", S.top_drivers.slice(0, 8).map(d => ({ label: nice(d.feature), value: d.mean_abs_contribution,
+  tip: `<b>${esc(nice(d.feature))}</b><br>Average contribution ${d.mean_abs_contribution.toFixed(3)} (log-odds)` })),
+  v => v.toFixed(2));
+
+/* ---------- active trials: areas + table ---------- */
+const rowsAll = DATA.trials;
+const state = { area: "", phase: "", sponsor: "", q: "", shown: 25 };
+function fill(id, values, label) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = `<option value="">All</option>` + values.map(v => `<option value="${esc(v)}">${esc(label ? label(v) : v)}</option>`).join("");
+  sel.addEventListener("change", () => { state[id.slice(2)] = sel.value; state.shown = 25; render(); });
+}
+const uniq = k => [...new Set(rowsAll.map(r => r[k]).filter(Boolean))].sort();
+fill("f-area", uniq("area"));
+fill("f-phase", uniq("phase"), phase);
+fill("f-sponsor", uniq("sponsor"), sponsor);
+document.getElementById("f-search").addEventListener("input", e => { state.q = e.target.value.trim().toLowerCase(); state.shown = 25; render(); });
+document.getElementById("f-clear").addEventListener("click", () => {
+  Object.assign(state, { area: "", phase: "", sponsor: "", q: "", shown: 25 });
+  ["f-area", "f-phase", "f-sponsor", "f-search"].forEach(id => { document.getElementById(id).value = ""; });
+  render();
+});
+document.getElementById("more").addEventListener("click", () => { state.shown += 25; render(); });
+
+bars("chart-areas", [...DATA.areas].sort((a, b) => b.avg_risk - a.avg_risk).map(a => ({
+  label: a.area, value: a.avg_risk, area: a.area,
+  tip: `<b>${esc(a.area)}</b><br>${a.trials.toLocaleString()} active trials · average risk ${pct(a.avg_risk, 1)}<br>${a.top_decile.toLocaleString()} in the riskiest tenth`,
+})), v => pct(v, 1), { left: 150, rowH: 26, onClick: d => {
+  state.area = state.area === d.area ? "" : d.area; state.shown = 25;
+  document.getElementById("f-area").value = state.area; render();
+  document.getElementById("count").scrollIntoView({ behavior: "smooth", block: "start" });
+} });
+
+function render() {
+  const f = rowsAll.filter(r => (!state.area || r.area === state.area) && (!state.phase || r.phase === state.phase)
+    && (!state.sponsor || r.sponsor === state.sponsor)
+    && (!state.q || (r.nct + " " + (r.title || "")).toLowerCase().includes(state.q)));
+  const maxRisk = rowsAll.length ? rowsAll[0].risk : 1;
+  document.getElementById("count").textContent =
+    `${f.length.toLocaleString()} of the ${rowsAll.length.toLocaleString()} riskiest active trials match. Showing ${Math.min(state.shown, f.length)}.`;
+  document.getElementById("rows").innerHTML = f.slice(0, state.shown).map(r => `
+    <tr>
+      <td><a class="trial-id" href="https://clinicaltrials.gov/study/${esc(r.nct)}" target="_blank" rel="noopener">${esc(r.nct)}</a>
+          <span class="trial-title">${esc(r.title || "Untitled")}</span></td>
+      <td>${esc(r.area)}</td>
+      <td class="num">${esc(phase(r.phase))}</td>
+      <td>${esc(sponsor(r.sponsor))}</td>
+      <td class="num"><div class="riskcell"><div class="meter"><span style="width:${(r.risk / maxRisk * 100).toFixed(1)}%"></span></div>
+          <span>${pct(r.risk)}${r.decile === 10 ? '<span class="chip">Top 10%</span>' : ""}</span></div></td>
+      <td class="num">${pct(r.enrollment_risk)}</td>
+      <td class="drivers">${r.drivers.map(nice).map(esc).join(" · ") || "—"}</td>
+    </tr>`).join("") || `<tr><td colspan="7" class="muted">No trials match these filters. Clear a filter to see more.</td></tr>`;
+  document.getElementById("more").hidden = state.shown >= f.length;
+}
+render();
+</script>

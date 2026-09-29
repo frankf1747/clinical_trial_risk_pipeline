@@ -4,7 +4,7 @@ CREATE OR REPLACE TABLE RAW_TRIALS (
     nct_id STRING, status STRING, phase STRING, start_date DATE, number_of_arms INT, label INT,
     stop_reason STRING, has_dmc BOOLEAN,
     allocation STRING, intervention_model STRING, primary_purpose STRING, masking STRING,
-    sponsor_name STRING, sponsor_class STRING
+    sponsor_name STRING, sponsor_class STRING, brief_title STRING
 );
 
 CREATE OR REPLACE TABLE RAW_TRIAL_ATTRIBUTES (

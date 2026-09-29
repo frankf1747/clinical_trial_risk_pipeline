@@ -123,3 +123,8 @@ def test_reason_targets(db):
     assert (t2["label_enrollment"], t2["label_safety"]) == (0, 0)      # completed: negative for both
     assert (t5["label_enrollment"], t5["label_safety"]) == (None, None)  # business: out of both
     assert (t3["label_enrollment"], t3["label_safety"]) == (None, None)  # active
+
+
+def test_titles_are_for_display_only(db):
+    cols = {c[0] for c in db.execute("SELECT * FROM TRIAL_FEATURES LIMIT 0").description}
+    assert "brief_title" not in cols
