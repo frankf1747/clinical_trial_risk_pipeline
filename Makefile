@@ -1,7 +1,7 @@
 -include .env
 
 .PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
-	dashboard audit-build audit backtest report
+	dashboard audit-build audit backtest report m6
 
 setup:
 	uv sync
@@ -66,6 +66,15 @@ audit:
 
 backtest:
 	uv run python -m ctrisk.ml.backtest
+
+# The whole M6 run, in order, from the AACT snapshot and FAERS Parquet already under data/ (M1-M2).
+# Rebuilds trials and their drug map (the population now keeps finished post-2020 trials), reloads
+# Snowflake, trains, scores, and writes the model card and dashboard. The point-in-time audit runs only
+# when AACT_ARCHIVES is set. Stops at the first failure; run without -j so steps stay in order.
+m6: trials match attributes text upload warehouse train score report dashboard
+	@if [ -n "$(strip $(AACT_ARCHIVES))" ]; then $(MAKE) audit-build audit report; \
+	else echo "AACT_ARCHIVES is not set in .env: skipped the point-in-time audit"; fi
+	@echo "Next: commit models/ (new version), docs/model_card.md and docs/dashboard/index.html"
 
 # docs/model_card.md from the latest models/vN (after train, and again after audit or backtest)
 report:

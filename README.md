@@ -27,6 +27,7 @@ make audit-build                              # M6: registry features from archi
 make audit                                    # M6: latest-record vs point-in-time AUC on 2017-2020 starts
 make backtest                                 # scores written earlier vs outcomes known now
 make report                                   # docs/model_card.md: the full validation report for the latest model
+make m6                                       # all of the above from trials onward, plus the audit if AACT_ARCHIVES is set
 make test
 ```
 
