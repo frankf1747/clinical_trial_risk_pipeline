@@ -26,6 +26,7 @@ make dashboard                                # Snowflake serving views -> docs/
 make audit-build                              # M6: registry features from archived AACT snapshots (AACT_ARCHIVES in .env)
 make audit                                    # M6: latest-record vs point-in-time AUC on 2017-2020 starts
 make backtest                                 # scores written earlier vs outcomes known now
+make report                                   # docs/model_card.md: the full validation report for the latest model
 make test
 ```
 
@@ -92,6 +93,8 @@ The test split's higher termination rate is expected: only trials finished by th
 What each ingredient adds (any-termination model, test AUC): registration text +0.016, burden features +0.011, FAERS reporting history +0.002. By sponsor: industry 0.743, academic/other 0.672, government 0.671. On the censored 2017–2020 trials the AUC is 0.711, close to the headline.
 
 ### Validation summary (v2, any termination)
+
+The full report, generated from the model's own metrics files, is [`docs/model_card.md`](docs/model_card.md): predictors and when each was measured, sample sizes, tuning, discrimination, calibration, ablations including a model without any edit-prone field, rolling-origin windows, subgroups, the point-in-time audit and the prospective backtest.
 
 | | Train | Test | Recent |
 |---|---|---|---|

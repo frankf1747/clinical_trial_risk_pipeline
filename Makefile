@@ -1,7 +1,7 @@
 -include .env
 
 .PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
-	dashboard audit-build audit backtest
+	dashboard audit-build audit backtest report
 
 setup:
 	uv sync
@@ -66,3 +66,7 @@ audit:
 
 backtest:
 	uv run python -m ctrisk.ml.backtest
+
+# docs/model_card.md from the latest models/vN (after train, and again after audit or backtest)
+report:
+	uv run python -m ctrisk.ml.report

@@ -34,8 +34,12 @@ def payload(active: pd.DataFrame, areas: pd.DataFrame, metrics: dict, manifest: 
             "targets": {name: _target(t) for name, t in targets.items()},
             "by_sponsor": [{"key": k, "auc": v["roc_auc"], "n": v["n"]}
                            for k, v in targets["label"].get("by_sponsor_class", {}).items()],
-            "ablations": {k: round(full - label[f"lightgbm_no_{k}"]["test"]["roc_auc"], 4)
-                          for k in ("text", "burden", "faers")},
+            "ablations": {k: round(full - label[m]["test"]["roc_auc"], 4)
+                          for k, m in (("text", "lightgbm_no_text"), ("burden", "lightgbm_no_burden"),
+                                       ("faers", "lightgbm_no_faers"), ("stable", "lightgbm_stable_only"))
+                          if m in label},
+            "rolling": [{"years": f["test_years"], "auc": f["roc_auc"], "n": f["n"]}
+                        for f in targets["label"].get("rolling_origin", [])],
             "calibration": label["lightgbm"]["test"]["calibration"],
             "calibration_fit": label["lightgbm"]["test"].get("calibration_fit"),
             "top_drivers": metrics["top_drivers"],

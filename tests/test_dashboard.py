@@ -67,3 +67,12 @@ def test_page_never_claims_start_date_features_or_causes():
     html = render(payload(ACTIVE, AREAS, METRICS, MANIFEST))
     assert "built only from what was known" not in html and "Main reasons" not in html
     assert "Main model contributors" in html and "FDA reports with deaths" not in html
+
+
+def test_robustness_numbers_reach_the_page_when_the_model_has_them():
+    m = json.loads(json.dumps(METRICS))
+    m["targets"]["label"]["models"]["lightgbm_stable_only"] = {"test": {"roc_auc": 0.68}}
+    m["targets"]["label"]["rolling_origin"] = [{"test_years": "2013-2014", "roc_auc": 0.70, "n": 9000}]
+    s = payload(ACTIVE, AREAS, m, MANIFEST)["summary"]
+    assert s["ablations"]["stable"] == 0.036 and s["rolling"] == [{"years": "2013-2014", "auc": 0.70, "n": 9000}]
+    assert "stable" not in payload(ACTIVE, AREAS, METRICS, MANIFEST)["summary"]["ablations"]   # older versions

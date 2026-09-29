@@ -40,7 +40,7 @@ def test_every_target_is_trained_and_evaluated(result):
     assert set(report["targets"]) == {"label", "label_enrollment", "label_safety"}
     label = report["targets"]["label"]
     assert set(label["models"]) == {"logistic_regression", "lightgbm", "lightgbm_no_text",
-                                    "lightgbm_no_faers", "lightgbm_no_burden"}
+                                    "lightgbm_no_faers", "lightgbm_no_burden", "lightgbm_stable_only"}
     assert label["models"]["lightgbm"]["test"]["roc_auc"] > 0.85
     lo, hi = label["models"]["lightgbm"]["test"]["roc_auc_ci95"]
     assert lo < label["models"]["lightgbm"]["test"]["roc_auc"] < hi
@@ -121,3 +121,19 @@ def test_driver_directions_treat_booleans_as_levels():
     d = driver_directions(contrib, ["hv", "x", "registration_text"][:2], frame)
     assert d["hv"] == {"False": 0.3, "True": -0.4, "missing": 0.0}
     assert d["x"] == {"low_third": -0.1, "high_third": 0.3}
+
+
+def test_stable_only_model_drops_the_fields_edited_after_start(result):
+    _, report = result
+    label = report["targets"]["label"]["models"]
+    # n_countries carries the synthetic signal and is edit-prone, so the stable-only model loses it
+    assert label["lightgbm_stable_only"]["test"]["roc_auc"] < label["lightgbm"]["test"]["roc_auc"] - 0.1
+
+
+def test_rolling_origin_trains_only_on_earlier_starts(result):
+    _, report = result
+    folds = {f["test_years"]: f for f in report["targets"]["label"]["rolling_origin"]}
+    assert set(folds) == {"2012-2013", "2013-2014", "2014-2015"}          # no 2015-16 starts in the fixture
+    assert folds["2012-2013"]["train_n"] < folds["2014-2015"]["train_n"]
+    assert all(f["roc_auc"] > 0.85 and set(f["calibration_fit"]) == {"intercept", "slope"} for f in folds.values())
+    assert "rolling_origin" not in report["targets"]["label_safety"]      # overall target only

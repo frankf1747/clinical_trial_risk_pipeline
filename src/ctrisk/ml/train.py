@@ -24,7 +24,7 @@ from ctrisk.ml.evaluate import (
     metrics,
     subgroup_auc,
 )
-from ctrisk.ml.features import BURDEN, CATEGORICAL, FAERS, inputs, to_matrix
+from ctrisk.ml.features import BURDEN, CATEGORICAL, EDIT_PRONE, FAERS, inputs, to_matrix
 from ctrisk.ml.model import RiskModel, collapse_text
 from ctrisk.ml.text import TextFeatures
 
@@ -37,7 +37,12 @@ GRID = [{"num_leaves": nl, "learning_rate": lr, "min_child_samples": mcs}
         for nl in (15, 31, 63) for lr in (0.03, 0.06) for mcs in (50, 200)]
 TUNE_SPLIT = pd.Timestamp("2013-01-01")     # inner split: fit before, validate 2013-2014
 ABLATIONS = {"lightgbm": ([], True), "lightgbm_no_text": ([], False),
-             "lightgbm_no_faers": (FAERS, True), "lightgbm_no_burden": (BURDEN, True)}
+             "lightgbm_no_faers": (FAERS, True), "lightgbm_no_burden": (BURDEN, True),
+             "lightgbm_stable_only": (EDIT_PRONE, False)}    # no edit-prone fields, no text
+# Rolling origin: for each year Y, fit on training-split starts before Y and test on starts in Y and Y+1.
+# 2015 reproduces the headline split. Parameters stay as tuned (on 2013-2014), so the 2012 and 2013
+# windows are slightly optimistic; text features are refit on each fold's training rows.
+ROLLING = (2012, 2013, 2014, 2015)
 
 
 def logistic_regression(columns: list[str]):
@@ -63,6 +68,25 @@ def tune(frame: pd.DataFrame, y: pd.Series, columns: list[str], grid: list[dict]
     params = {**BASE_PARAMS, **{k: best[k] for k in ("num_leaves", "learning_rate", "min_child_samples")},
               "n_estimators": max(50, best["n_estimators"])}
     return params, results
+
+
+def rolling_origin(frame: pd.DataFrame, y: pd.Series, columns: list[str], params: dict, text_min_df: int,
+                   years=ROLLING) -> list[dict]:
+    """Held-out AUC and calibration on successive two-year windows: is the headline a lucky period?"""
+    labeled = frame[frame["split"].isin(["train", "test"]) & y.notna()]
+    year = pd.to_datetime(labeled["start_date"]).dt.year
+    out = []
+    for first in years:
+        fit = labeled[(labeled["split"] == "train") & (year < first)]
+        held = labeled[(year >= first) & (year < first + 2)]
+        yf, yh = y[fit.index], y[held.index]
+        if yf.nunique() < 2 or yh.nunique() < 2:
+            continue
+        p = RiskModel(columns, params, text=TextFeatures(min_df=text_min_df)).fit(fit, yf).predict_proba(held)
+        out.append({"test_years": f"{first}-{first + 1}", "train_n": len(fit), "n": len(held),
+                    "positives": int(yh.sum()), "roc_auc": round(float(roc_auc_score(yh, p)), 4),
+                    "calibration_fit": calibration_fit(yh, p)})
+    return out
 
 
 def evaluate(p: np.ndarray, y: pd.Series, full: bool) -> dict:
@@ -102,6 +126,8 @@ def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: lis
         if col in columns:
             report[key] = subgroup_auc(yt, p, test[col])
     report["by_start_year"] = subgroup_auc(yt, p, pd.to_datetime(test["start_date"]).dt.year)
+    if target == "label":
+        report["rolling_origin"] = rolling_origin(frame, y, columns, params, text_min_df)
     return models["lightgbm"], report
 
 
@@ -213,6 +239,9 @@ if __name__ == "__main__":
               " calibration:", t["models"]["lightgbm"]["test"]["calibration_fit"])
         if any(m["test"]["roc_auc"] > 0.85 for m in t["models"].values()):
             print("!! a test AUC above 0.85 — investigate for leakage before believing it")
+    for fold in report["targets"]["label"].get("rolling_origin", []):
+        print(f"rolling origin, test starts {fold['test_years']}: AUC {fold['roc_auc']} "
+              f"(n={fold['n']}, trained on {fold['train_n']}), calibration {fold['calibration_fit']}")
     for key in ("by_sponsor_class", "by_phase", "by_start_year"):
         if key in report["targets"]["label"]:
             print(f"\nlabel AUC {key.replace('_', ' ')}:", report["targets"]["label"][key])

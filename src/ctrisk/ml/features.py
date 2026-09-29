@@ -9,6 +9,12 @@ FAERS = ["n_substances", "faers_reports", "faers_reports_12m", "faers_serious_sh
          "faers_death_share", "has_faers_history"]
 BURDEN = ["n_countries", "us_only", "min_age_years", "max_age_years", "healthy_volunteers",
           "criteria_count", "criteria_chars"]
+# Registry fields most likely to be edited after a trial starts: eligibility amendments, sites and
+# countries added or dropped, collaborators, keywords and oversight changed. The registration text is
+# edit-prone too (summaries and criteria get rewritten). The model without these, and without text, puts
+# a floor under how much of the AUC could come from post-start edits, before any archive is checked.
+EDIT_PRONE = ["criteria_count", "criteria_chars", "n_countries", "us_only", "n_collaborators", "n_keywords",
+              "responsible_party", "has_dmc"]
 
 
 def inputs(frame: pd.DataFrame, drop=()) -> list[str]:

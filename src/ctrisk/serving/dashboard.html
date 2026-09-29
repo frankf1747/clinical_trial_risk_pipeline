@@ -109,7 +109,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
           <span class="key"><span class="swatch" style="border:2px solid var(--base);width:11px;height:11px"></span>Logistic baseline</span>
         </div>
         <div id="chart-perf"></div>
-        <p class="cap">0.5 is a coin flip. Enrollment-driven terminations are the most predictable. Safety terminations are too rare in the test years for a firm estimate.</p>
+        <p class="cap" id="perf-cap">0.5 is a coin flip. Enrollment-driven terminations are the most predictable. Safety terminations are too rare in the test years for a firm estimate.</p>
       </div>
       <div class="card">
         <h3>Calibration: predicted vs observed termination rate</h3>
@@ -164,7 +164,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     </div>
     <div>
       <h3>What the score does not know</h3>
-      <p>Registry features describe the latest version of each record, not the one at the start date, so the scores and held-out numbers may be inflated by later edits. Planned enrollment and site counts are left out because the current record already reflects the outcome. Stop reasons come from free text. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence. Contributors show what moved a score, not why a trial would stop.</p>
+      <p>The full validation report is <a href="../model_card.md">docs/model_card.md</a>. Registry features describe the latest version of each record, not the one at the start date, so the scores and held-out numbers may be inflated by later edits. Planned enrollment and site counts are left out because the current record already reflects the outcome. Stop reasons come from free text. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence. Contributors show what moved a score, not why a trial would stop.</p>
     </div>
   </section>
 </div>
@@ -338,8 +338,14 @@ bars("chart-abl", [
   { label: "Registration text", value: S.ablations.text },
   { label: "Burden & eligibility", value: S.ablations.burden },
   { label: "FAERS reporting history", value: S.ablations.faers },
-].map(d => ({ ...d, value: Math.max(0, d.value), tip: `<b>${d.label}</b><br>AUC falls by ${d.value.toFixed(3)} without it` })),
+  { label: "All edit-prone fields", value: S.ablations.stable,
+    note: "Eligibility criteria, countries, collaborators, keywords, oversight and all text: fields often edited after a trial starts. Without them, the AUC is a floor under what post-start edits could explain." },
+].filter(d => d.value != null).map(d => ({ ...d, value: Math.max(0, d.value),
+  tip: `<b>${d.label}</b><br>AUC falls by ${d.value.toFixed(3)} without it` + (d.note ? `<br>${d.note}` : "") })),
   v => "+" + v.toFixed(3));
+if (S.rolling && S.rolling.length) document.getElementById("perf-cap").textContent +=
+  " Same model on other periods (trained only on earlier starts): " +
+  S.rolling.map(r => `${r.years.replace("-", "–")} ${r.auc.toFixed(3)}`).join(" · ") + ".";
 bars("chart-drivers", S.top_drivers.slice(0, 8).map(d => ({ label: nice(d.feature), value: d.mean_abs_contribution,
   tip: `<b>${esc(nice(d.feature))}</b><br>Average size of contribution ${d.mean_abs_contribution.toFixed(3)} (log-odds)` +
     (directionText(d.feature, d.direction) ? `<br>${directionText(d.feature, d.direction)}` : "") })),
