@@ -59,6 +59,10 @@ def test_ablations_and_subgroups(result):
     label = report["targets"]["label"]
     assert label["models"]["lightgbm_no_burden"]["test"]["roc_auc"] < 0.8   # n_countries is the driver
     assert set(label["by_sponsor_class"]) == {"INDUSTRY", "OTHER"}
+    assert set(label["by_phase"]) == {"PHASE1", "PHASE2", "PHASE3"}
+    assert all(g["n"] >= 100 for g in label["by_start_year"].values()) and label["by_start_year"]
+    fit = label["models"]["lightgbm"]["test"]["calibration_fit"]
+    assert set(fit) == {"intercept", "slope"}
     assert report["top_drivers"][0]["feature"] == "n_countries"
 
 
@@ -99,3 +103,21 @@ def test_text_is_only_ever_fit_on_training_rows(monkeypatch):
     assert seen and all(s <= set(frame.loc[train, "nct_id"]) for s in seen)
     inner = train & (frame["start_date"] < "2013-01-01") & frame["label"].notna()
     assert seen[0] == set(frame.loc[inner, "nct_id"])  # tuning: inner-train rows only
+
+
+def test_top_drivers_say_which_way_each_feature_pushes(result):
+    _, report = result
+    top = {d["feature"]: d for d in report["top_drivers"]}
+    n = top["n_countries"]["direction"]                       # the synthetic signal: more -> terminated
+    assert n["high_third"] > 0 > n["low_third"]
+    assert set(top["phase"]["direction"]) <= {"PHASE1", "PHASE2", "PHASE3", "missing"}
+    assert top["registration_text"]["direction"] is None      # a composite has no single value
+
+
+def test_driver_directions_treat_booleans_as_levels():
+    from ctrisk.ml.train import driver_directions
+    frame = pd.DataFrame({"hv": [True, False, None, False], "x": [1.0, 2.0, 3.0, np.nan]})
+    contrib = np.array([[-0.4, -0.1], [0.2, 0.0], [0.0, 0.3], [0.4, 0.0]])
+    d = driver_directions(contrib, ["hv", "x", "registration_text"][:2], frame)
+    assert d["hv"] == {"False": 0.3, "True": -0.4, "missing": 0.0}
+    assert d["x"] == {"low_third": -0.1, "high_third": 0.3}

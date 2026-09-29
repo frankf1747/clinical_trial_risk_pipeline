@@ -9,7 +9,7 @@ def test_one_blob_per_trial_from_registration_fields(aact):
     rows = {r.nct_id: r.text for r in build_trial_text(
         trials, aact["studies"], aact["brief_summaries"], aact["eligibilities"], aact["keywords"]).collect()}
 
-    assert set(rows) == {"NCT001", "NCT002", "NCT003", "NCT009"}
+    assert set(rows) == {"NCT001", "NCT002", "NCT003", "NCT009", "NCT010"}
     t = rows["NCT001"]
     assert "A Phase 2 Study of Pembrolizumab" in t          # official title preferred
     assert "advanced lung cancer" in t                       # summary

@@ -16,7 +16,9 @@ TABLES = ("studies", "designs", "sponsors", "interventions",
 def fetch(source: str, dest: Path, tables: tuple[str, ...] = TABLES) -> list[Path]:
     dest.mkdir(parents=True, exist_ok=True)
     is_url = source.startswith(("http://", "https://"))
-    zip_path = download(source, dest.parent / "aact.zip") if is_url else Path(source)
+    # One zip per destination folder: download() skips a zip that already exists, so a shared name
+    # would hand every archive after the first the first archive's contents.
+    zip_path = download(source, dest.parent / f"{dest.name}.zip") if is_url else Path(source)
     return _extract(zip_path, dest, tables)
 
 
@@ -37,8 +39,9 @@ def _extract(zip_path: Path, dest: Path, tables: tuple[str, ...]) -> list[Path]:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("usage: python -m ctrisk.ingest.aact <url-or-zip-path>")
+    if len(sys.argv) not in (2, 3):
+        sys.exit("usage: python -m ctrisk.ingest.aact <url-or-zip-path> [dest-folder]")
     cfg = load_config()
-    for p in fetch(sys.argv[1], Path(cfg.local_root) / "raw" / "aact"):
+    dest = Path(sys.argv[2]) if len(sys.argv) == 3 else Path(cfg.local_root) / "raw" / "aact"
+    for p in fetch(sys.argv[1], dest):
         print(f"extracted {p}")

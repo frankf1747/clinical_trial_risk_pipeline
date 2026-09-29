@@ -36,3 +36,44 @@ def test_calibration_ignores_pandas_index_alignment():
     y = pd.Series(Y, index=range(500, 510))      # a slice of a larger frame
     rows = calibration(y, pd.Series(PERFECT), bins=2)
     assert sum(r["observed"] * r["n"] for r in rows) == Y.sum()
+
+
+def calibrated(n=20000, seed=0):
+    rng = np.random.default_rng(seed)
+    p = rng.uniform(0.02, 0.6, n)
+    return (rng.random(n) < p).astype(int), p
+
+
+def test_metrics_count_positives():
+    assert metrics(Y, PERFECT)["positives"] == 2
+
+
+def test_calibration_fit_is_identity_for_a_calibrated_score():
+    from ctrisk.ml.evaluate import calibration_fit
+    y, p = calibrated()
+    fit = calibration_fit(y, p)
+    assert abs(fit["slope"] - 1) < 0.05 and abs(fit["intercept"]) < 0.05
+
+
+def test_calibration_fit_flags_an_overconfident_score():
+    from ctrisk.ml.evaluate import calibration_fit
+    y, p = calibrated()
+    too_sure = 1 / (1 + np.exp(-2 * np.log(p / (1 - p))))   # same ranking, twice the confidence
+    assert 0.4 < calibration_fit(y, too_sure)["slope"] < 0.6
+
+
+def test_calibration_fit_sees_under_prediction_in_the_intercept():
+    from ctrisk.ml.evaluate import calibration_fit
+    y, p = calibrated()
+    assert calibration_fit(y, p / 2)["intercept"] > 0.5      # predicted risk too low overall
+
+
+def test_subgroup_auc_skips_small_or_single_class_groups():
+    import pandas as pd
+
+    from ctrisk.ml.evaluate import subgroup_auc
+    y = pd.Series([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], index=range(100, 110))
+    p = pd.Series(PERFECT, index=y.index)
+    groups = pd.Series(["big"] * 8 + [None] * 2, index=y.index)
+    assert subgroup_auc(y, p, groups, min_n=5) == {"big": {"n": 8, "positives": 2, "roc_auc": 1.0}}
+    assert subgroup_auc(y, p, groups, min_n=2)["big"]["n"] == 8     # 'missing' has one class: skipped

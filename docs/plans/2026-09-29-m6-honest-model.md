@@ -1,6 +1,6 @@
 # M6: An Honest Model — Fix Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Do not commit** — Frank commits this repo himself. Only Tasks 5 and 7 touch Snowflake; Task 5 also downloads AACT archives.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. **Do not commit** — Frank commits this repo himself. Only Tasks 5 and 7 touch Snowflake; Task 5 also downloads AACT archives.
 
 **Goal:** Make every number and label in the report mean what a reader thinks it means, then measure — before rebuilding anything — how much of the 0.716 AUC depends on registry edits made after trials started.
 
@@ -48,7 +48,7 @@ Facts that shape Task 5: AACT keeps permanent monthly flat-file archives from ab
 
 **Files:** Modify `src/ctrisk/ml/score.py`, `tests/test_ml_score.py`
 
-- [ ] **Step 1: Write failing tests** — replace `tests/test_ml_score.py`:
+- [x] **Step 1: Write failing tests** — replace `tests/test_ml_score.py`:
 
 ```python
 import numpy as np
@@ -85,9 +85,9 @@ def test_deciles_run_from_1_lowest_to_10_highest():
     assert (d == 10).sum() == 10 and d[-1] == 10
 ```
 
-- [ ] **Step 2: Run to verify failure** — `uv run pytest tests/test_ml_score.py -v` → FAIL (`describe` missing; `top_drivers` signature).
+- [x] **Step 2: Run to verify failure** — `uv run pytest tests/test_ml_score.py -v` → FAIL (`describe` missing; `top_drivers` signature).
 
-- [ ] **Step 3: Implement** — in `src/ctrisk/ml/score.py` replace `top_drivers` with:
+- [x] **Step 3: Implement** — in `src/ctrisk/ml/score.py` replace `top_drivers` with:
 
 ```python
 import numbers
@@ -144,7 +144,7 @@ In the `__main__` block, replace the driver columns:
 
 Docstring for the module: `"""Score active trials with the latest version: overall and enrollment termination risk, plus the top model contributors (feature=value, signed contribution)."""` Earlier score rows keep bare names in `TOP_DRIVER_n`; the `MODEL_VERSION` and `SCORED_AT` columns tell them apart.
 
-- [ ] **Step 4: Run** — `uv run pytest tests/test_ml_score.py -v && uv run ruff check src tests` → pass.
+- [x] **Step 4: Run** — `uv run pytest tests/test_ml_score.py -v && uv run ruff check src tests` → pass.
 
 ---
 
@@ -152,7 +152,7 @@ Docstring for the module: `"""Score active trials with the latest version: overa
 
 **Files:** Modify `src/ctrisk/ml/train.py`, `tests/test_ml_train.py`
 
-- [ ] **Step 1: Write failing tests** — append to `tests/test_ml_train.py`:
+- [x] **Step 1: Write failing tests** — append to `tests/test_ml_train.py`:
 
 ```python
 def test_top_drivers_say_which_way_each_feature_pushes(result):
@@ -164,9 +164,9 @@ def test_top_drivers_say_which_way_each_feature_pushes(result):
     assert top["registration_text"]["direction"] is None      # a composite has no single value
 ```
 
-- [ ] **Step 2: Run to verify failure** — `uv run pytest tests/test_ml_train.py -v -k direction` → KeyError.
+- [x] **Step 2: Run to verify failure** — `uv run pytest tests/test_ml_train.py -v -k direction` → KeyError.
 
-- [ ] **Step 3: Implement** — in `src/ctrisk/ml/train.py` add:
+- [x] **Step 3: Implement** — in `src/ctrisk/ml/train.py` add:
 
 ```python
 def driver_directions(contrib: np.ndarray, names: list[str], frame: pd.DataFrame) -> dict[str, dict | None]:
@@ -200,7 +200,7 @@ and in `run()` replace the `top_drivers` block:
                              for f, v in importance.sort_values(ascending=False).head(15).items()]
 ```
 
-- [ ] **Step 4: Run** — `uv run pytest tests/test_ml_train.py -v && uv run ruff check src tests` → pass.
+- [x] **Step 4: Run** — `uv run pytest tests/test_ml_train.py -v && uv run ruff check src tests` → pass.
 
 ---
 
@@ -208,7 +208,7 @@ and in `run()` replace the `top_drivers` block:
 
 **Files:** Modify `src/ctrisk/ml/evaluate.py`, `tests/test_ml_evaluate.py`, `src/ctrisk/ml/train.py`, `tests/test_ml_train.py`
 
-- [ ] **Step 1: Write failing tests** — append to `tests/test_ml_evaluate.py`:
+- [x] **Step 1: Write failing tests** — append to `tests/test_ml_evaluate.py`:
 
 ```python
 def test_metrics_count_positives():
@@ -244,9 +244,9 @@ def test_subgroup_auc_skips_small_or_single_class_groups():
     assert set(out) == {"big"} and out["big"] == {"n": 8, "positives": 2, "roc_auc": 1.0}
 ```
 
-- [ ] **Step 2: Run to verify failure** — `uv run pytest tests/test_ml_evaluate.py -v` → FAIL.
+- [x] **Step 2: Run to verify failure** — `uv run pytest tests/test_ml_evaluate.py -v` → FAIL.
 
-- [ ] **Step 3: Implement** — in `src/ctrisk/ml/evaluate.py`:
+- [x] **Step 3: Implement** — in `src/ctrisk/ml/evaluate.py`:
 
 ```python
 from scipy.optimize import brentq                    # scipy comes with scikit-learn
@@ -291,7 +291,7 @@ In `src/ctrisk/ml/train.py`: import `calibration_fit, subgroup_auc`; in `evaluat
 
 and print `calibration_fit`, `by_phase`, `by_start_year` in the `__main__` summary next to the existing lines. In `tests/test_ml_train.py::test_ablations_and_subgroups` add `assert set(label["by_phase"]) == {"PHASE1", "PHASE2", "PHASE3"}` and `assert "calibration_fit" in label["models"]["lightgbm"]["test"]`. (The synthetic test split has ~1,000 rows, so each phase clears `min_n=100`; start years have ~140 rows each.)
 
-- [ ] **Step 4: Run** — `uv run pytest -q && uv run ruff check src tests` → pass.
+- [x] **Step 4: Run** — `uv run pytest -q && uv run ruff check src tests` → pass.
 
 ---
 
@@ -299,7 +299,7 @@ and print `calibration_fit`, `by_phase`, `by_start_year` in the `__main__` summa
 
 **Files:** Modify `README.md`
 
-- [ ] **Step 1: Opening** — replace the first two lines with:
+- [x] **Step 1: Opening** — replace the first two lines with:
 
 ```
 # Clinical Trial Risk Pipeline
@@ -309,7 +309,7 @@ Ranks Phase 1–3 drug trials by their risk of early termination, from the regis
 Caveat first: sponsor and FAERS features are computed as of each trial's start date, but the registry-record features (design, eligibility, geography, text) come from the latest version of the record, because the AACT snapshot holds only that version. Records are edited during trials, so the held-out AUC below may be inflated by post-start edits. M6 measures this (`docs/plans/2026-09-29-m6-honest-model.md`); until then treat the numbers as preliminary and the per-trial percentages as rankings, not probabilities.
 ```
 
-- [ ] **Step 2: Validation summary** — after the `## Results` table add:
+- [x] **Step 2: Validation summary** — after the `## Results` table add:
 
 ```
 ### Validation summary (v2)
@@ -331,9 +331,9 @@ Caveat first: sponsor and FAERS features are computed as of each trial's start d
 
 (Counts are `n × base_rate` from `models/v2/metrics.json`, rounded; replace with the exact `positives` after Task 7.)
 
-- [ ] **Step 3: Wording** — in `## Results` and `## Status`: "top drivers" → "main model contributors (SHAP contributions, not causes)"; FAERS features described as "historical FAERS reporting signal: FAERS has duplicate and incomplete reports and cannot establish causation or incidence (FDA)"; the enrollment-driven precision line keeps its numbers. Keep the existing Limitations paragraph, minus the latest-record sentence now in the opening.
+- [x] **Step 3: Wording** — in `## Results` and `## Status`: "top drivers" → "main model contributors (SHAP contributions, not causes)"; FAERS features described as "historical FAERS reporting signal: FAERS has duplicate and incomplete reports and cannot establish causation or incidence (FDA)"; the enrollment-driven precision line keeps its numbers. Keep the existing Limitations paragraph, minus the latest-record sentence now in the opening.
 
-- [ ] **Step 4: Check** — the README no longer contains the phrase "using only what is known when they start".
+- [x] **Step 4: Check** — the README no longer contains the phrase "using only what is known when they start".
 
 ---
 
@@ -343,7 +343,7 @@ Cost: 17 quarterly AACT archives (2017-01 … 2021-01, ~1.5 GB each zipped; dele
 
 **Files:** Modify `src/ctrisk/ingest/aact.py`, `src/ctrisk/spark/clean_trials.py`, `tests/test_clean_trials.py`, `Makefile`, `.env.example`; create `src/ctrisk/spark/point_in_time.py`, `tests/test_point_in_time.py`, `src/ctrisk/ml/audit.py`, `tests/test_ml_audit.py`
 
-- [ ] **Step 1: One folder per archive** — `src/ctrisk/ingest/aact.py::__main__` accepts an optional second argument:
+- [x] **Step 1: One folder per archive** — `src/ctrisk/ingest/aact.py::__main__` accepts an optional second argument:
 
 ```python
     if len(sys.argv) not in (2, 3):
@@ -355,7 +355,7 @@ Cost: 17 quarterly AACT archives (2017-01 … 2021-01, ~1.5 GB each zipped; dele
 
 Makefile: `ingest-aact` passes `$(DEST)` through. `.env.example` gains a comment listing the archive URL pattern to copy from the AACT snapshots page (`https://aact.ctti-clinicaltrials.org/downloads/snapshots?type=flatfiles&year=YYYY`; file names carry the date).
 
-- [ ] **Step 2: Reusable per-study fields** — in `src/ctrisk/spark/clean_trials.py` split `build_trials`:
+- [x] **Step 2: Reusable per-study fields** — in `src/ctrisk/spark/clean_trials.py` split `build_trials`:
 
 ```python
 def study_fields(studies: DataFrame, designs: DataFrame, sponsors: DataFrame) -> DataFrame:
@@ -372,7 +372,7 @@ def build_trials(...):
 
 Test: `tests/test_clean_trials.py` gains `test_study_fields_keeps_every_study(aact)` asserting all ten fixture studies come back with `status`, `phase`, `sponsor_class`. Add `start_date_type` to the studies fixture header (values `ACTUAL` for finished rows, `ANTICIPATED` for NCT003, blank elsewhere); the existing tests do not read it.
 
-- [ ] **Step 3: Write failing tests** — `tests/test_point_in_time.py`, on the fixture treated as two archives:
+- [x] **Step 3: Write failing tests** — `tests/test_point_in_time.py`, on the fixture treated as two archives:
 
 ```python
 import pandas as pd
@@ -399,7 +399,7 @@ def test_nearest_archive_is_the_first_on_or_after_start_else_the_earliest_seen()
     assert pick.loc["B", "x"] == 3 and pick.loc["B", "lag_days"] == 90   # registered after start
 ```
 
-- [ ] **Step 4: Implement** — `src/ctrisk/spark/point_in_time.py`:
+- [x] **Step 4: Implement** — `src/ctrisk/spark/point_in_time.py`:
 
 ```python
 """Registry-record features for a cohort as they stood in archived AACT snapshots.
@@ -468,7 +468,7 @@ if __name__ == "__main__":
 
 Makefile: `audit-build: uv run python -m ctrisk.spark.point_in_time`.
 
-- [ ] **Step 5: The comparison** — `tests/test_ml_audit.py` first:
+- [x] **Step 5: The comparison** — `tests/test_ml_audit.py` first:
 
 ```python
 import numpy as np
@@ -546,7 +546,7 @@ def compare(model, latest: pd.DataFrame, pit: pd.DataFrame, registry: list[str])
 
 `__main__`: load the latest model version (`registry.latest/load`), read `SELECT * FROM TRIAL_FEATURES_V{version} WHERE split = 'recent'` from Snowflake (columns lower-cased, `start_date` to datetime), read `data/parquet_pit/registry_at_start.parquet`, set `registry = REGISTRY + [c for c in latest.columns if c.startswith("area_")]`, run `compare`, write `models/v{version}/audit_point_in_time.json` and print the two AUCs, the CI, the calibration fits, and the ten features whose terminated-vs-completed change rates differ most. Makefile: `audit: uv run python -m ctrisk.ml.audit`.
 
-- [ ] **Step 6: Run** — `uv run pytest -q && uv run ruff check src tests` → pass.
+- [x] **Step 6: Run** — `uv run pytest -q && uv run ruff check src tests` → pass.
 
 ---
 
@@ -554,9 +554,9 @@ def compare(model, latest: pd.DataFrame, pit: pd.DataFrame, registry: list[str])
 
 **Files:** Modify `src/ctrisk/spark/clean_trials.py`, `tests/test_clean_trials.py`, `sql/20_features/40_trial_features.sql`, `tests/test_features_sql.py`, `Makefile`; create `src/ctrisk/ml/backtest.py`
 
-- [ ] **Step 1: Keep later finishers** — in `clean_trials.py` drop the upper bound: `finished = status in (COMPLETED, TERMINATED) & (start_date >= TRAIN_START)`; delete `TRAIN_END`. `test_keeps_only_eligible_drug_trials` now expects `NCT010` too (Phase 2, completed, 2021 start; check its intervention row is a drug — if not, add one to `interventions.txt`). `test_label_is_terminated_vs_completed_and_null_for_active` gains `"NCT010": 0`.
-- [ ] **Step 2: A `later` split** — `40_trial_features.sql`: `WHEN t.start_date < DATE '2021-01-01' THEN 'recent' ELSE 'later' END`. `train.py` already reads only `train`, `test`, `recent`; its label check (`split != 'score'` rows must have labels) still holds. `tests/test_features_sql.py`: add `('T9', DATE '2021-02-01', 0, NULL, 'Eps', 'OTHER')` and assert `features(db, "T9")["split"] == "later"`. Snowflake's `90_checks.sql` needs no change.
-- [ ] **Step 3: Backtest** — `src/ctrisk/ml/backtest.py`:
+- [x] **Step 1: Keep later finishers** — in `clean_trials.py` drop the upper bound: `finished = status in (COMPLETED, TERMINATED) & (start_date >= TRAIN_START)`; delete `TRAIN_END`. `test_keeps_only_eligible_drug_trials` now expects `NCT010` too (Phase 2, completed, 2021 start; check its intervention row is a drug — if not, add one to `interventions.txt`). `test_label_is_terminated_vs_completed_and_null_for_active` gains `"NCT010": 0`.
+- [x] **Step 2: A `later` split** — `40_trial_features.sql`: `WHEN t.start_date < DATE '2021-01-01' THEN 'recent' ELSE 'later' END`. `train.py` already reads only `train`, `test`, `recent`; its label check (`split != 'score'` rows must have labels) still holds. `tests/test_features_sql.py`: add `('T9', DATE '2021-02-01', 0, NULL, 'Eps', 'OTHER')` and assert `features(db, "T9")["split"] == "later"`. Snowflake's `90_checks.sql` needs no change.
+- [x] **Step 3: Backtest** — `src/ctrisk/ml/backtest.py`:
 
 ```python
 """Prospective check: how well did scores written earlier rank the trials that have since finished?
@@ -574,7 +574,7 @@ WHERE t.label IS NOT NULL"""
 
 `__main__`: read the query, group by `model_version`, print `n`, `positives`, `roc_auc`, `roc_auc_ci95`, `precision_top_10pct`, `calibration_fit`, plus the count of scored trials still unresolved (`SELECT COUNT(DISTINCT nct_id) FROM TRIAL_RISK_SCORES WHERE nct_id NOT IN (SELECT nct_id FROM TRIAL_FEATURES WHERE label IS NOT NULL)`). Write `models/backtest_{YYYY-MM-DD}.json`. Makefile: `backtest: uv run python -m ctrisk.ml.backtest`. Pure logic is the existing `evaluate.py`; no new unit test beyond the SQL one in Step 2.
 
-- [ ] **Step 4: Run** — `uv run pytest -q && uv run ruff check src tests` → pass.
+- [x] **Step 4: Run** — `uv run pytest -q && uv run ruff check src tests` → pass.
 
 ---
 
@@ -596,3 +596,12 @@ WHERE t.label IS NOT NULL"""
 **Full point-in-time rebuild (2008–2016 starts), only if Task 7 Step 5 lands on the third outcome.** Needs ClinicalTrials.gov record history for ~46,000 trials. Verify the current history endpoint in a browser first (the `cthist` package broke on 2026-09-26); design a polite fetcher (one request per second, resumable, cached per trial), take the last version dated on or before each start date, map its fields onto `study_fields`, `trial_attributes` and `trial_text`, retrain, and re-test on 2015–2016. Then the harder schedule the reviewer asked for — train 2008–2018, validate 2019–2021, untouched test 2022–2023 — is possible because Task 6 now labels those years, with the censoring caveat stated per year.
 
 **Not in M6:** full FAERS (S1); planned enrollment from archives (the old M6, now folded into the archive work in Task 5: once archives are ingested, first-registered enrollment is one more column).
+
+## Changes during implementation (Tasks 1–6 done; Task 7 not yet run)
+
+- **Archive choice:** the builder takes each trial's *last* archived record on or before its start date, which cannot contain post-start edits, and falls back to the first record after start only for trials registered late (`lag_days > 0`). The draft above picked the first archive after start, which can carry weeks of edits.
+- **Monthly, one archive at a time:** `make audit-build` extracts each archive, keeps the cohort's rows (`data/parquet_pit/by_archive/<date>/`), deletes the extract, and skips archives already reduced, so monthly archives (2017-01 … 2021-01) fit on a laptop. Each download now gets its own zip name; before, `download()` would have reused the first archive's zip for every later one.
+- **Legacy registry wording:** archives before the 2023 registry modernization spell enums as display text ("Parallel Assignment", "None (Open Label)", "Sponsor-Investigator", "Accepts Healthy Volunteers"). `design_value`, `masking_value` and `flag` in `clean_trials.py` map both eras to the same values; current data is unchanged. The builder prints per-archive null shares so remaining drift is visible, and the audit reports `unseen_levels`: archived categories the model never trained on.
+- **Audit on matched trials:** both AUCs are computed on the same trials (those with an archived record), with a paired bootstrap interval on the drop, plus a strict subset whose record predates the start, and a one-column-at-a-time swap that isolates which column carries the gap. Change rates report the terminated-minus-completed `gap`: leakage shows as a positive gap, format drift as change in both groups.
+- **Population:** finished trials now keep labels for starts after 2020 (split `later`, used only by the backtest). The drug match-rate gate counts only modelled trials (`start_date < MODEL_END`, 2021-01-01) so its threshold keeps its meaning; `check_trials` still gates on all labeled trials.
+- **Backtest** uses each trial's first score per model version.

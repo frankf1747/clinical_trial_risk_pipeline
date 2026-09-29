@@ -17,7 +17,13 @@ from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from ctrisk.ml.evaluate import bootstrap_auc_ci, calibration, metrics
+from ctrisk.ml.evaluate import (
+    bootstrap_auc_ci,
+    calibration,
+    calibration_fit,
+    metrics,
+    subgroup_auc,
+)
 from ctrisk.ml.features import BURDEN, CATEGORICAL, FAERS, inputs, to_matrix
 from ctrisk.ml.model import RiskModel, collapse_text
 from ctrisk.ml.text import TextFeatures
@@ -64,6 +70,7 @@ def evaluate(p: np.ndarray, y: pd.Series, full: bool) -> dict:
     if full:
         out["roc_auc_ci95"] = bootstrap_auc_ci(y, p)
         out["calibration"] = calibration(y, p)
+        out["calibration_fit"] = calibration_fit(y, p)
     return out
 
 
@@ -89,13 +96,42 @@ def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: lis
         report["models"][name] = {
             "test": evaluate(predict(test), y[rows["test"]], full=name == "lightgbm"),
             "recent": evaluate(predict(recent), y[rows["recent"]], full=False)}
-    if "sponsor_class" in columns:
-        p = pd.Series(models["lightgbm"].predict_proba(test), index=test.index)
-        report["by_sponsor_class"] = {
-            ("missing" if pd.isna(k) else str(k)): {
-                "n": len(g), "roc_auc": round(float(roc_auc_score(y[g.index], p[g.index])), 4)}
-            for k, g in test.groupby("sponsor_class", dropna=False) if y[g.index].nunique() > 1}
+    p = pd.Series(models["lightgbm"].predict_proba(test), index=test.index)
+    yt = y[rows["test"]]
+    for key, col in (("by_sponsor_class", "sponsor_class"), ("by_phase", "phase")):
+        if col in columns:
+            report[key] = subgroup_auc(yt, p, test[col])
+    report["by_start_year"] = subgroup_auc(yt, p, pd.to_datetime(test["start_date"]).dt.year)
     return models["lightgbm"], report
+
+
+def _mean(values: pd.Series) -> float | None:
+    return None if values.empty or values.isna().all() else round(float(values.mean()), 4)
+
+
+def _is_boolean(values: pd.Series) -> bool:
+    present = values.dropna()
+    return present.empty or present.map(lambda v: isinstance(v, (bool, np.bool_))).all()
+
+
+def driver_directions(contrib: np.ndarray, names: list[str], frame: pd.DataFrame) -> dict[str, dict | None]:
+    """Which way each feature pushes, as mean signed contribution (log-odds; > 0 = toward termination):
+    per level for categoricals and booleans, for the lowest and highest third of values for numerics.
+    None for a composite with no single value (registration_text). Rows of contrib follow frame."""
+    out = {}
+    for j, name in enumerate(names):
+        if name not in frame.columns:
+            out[name] = None
+            continue
+        c, v = pd.Series(contrib[:, j], index=frame.index), frame[name]
+        if name in CATEGORICAL or _is_boolean(v):
+            levels = v.astype(object).where(v.notna(), "missing").astype(str)
+            out[name] = {lvl: _mean(c[levels == lvl]) for lvl in sorted(levels.unique())}
+        else:
+            x = v.map(lambda a: np.nan if pd.isna(a) else float(a))
+            lo, hi = x.quantile([1 / 3, 2 / 3])
+            out[name] = {"low_third": _mean(c[x <= lo]), "high_third": _mean(c[x >= hi])}
+    return out
 
 
 def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20):
@@ -117,8 +153,11 @@ def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20):
     main = final["label"]
     test = frame[(frame["split"] == "test") & frame["label"].notna()]
     contrib, names = collapse_text(main.contributions(test), main.feature_names)
-    importance = pd.Series(np.abs(contrib).mean(axis=0), index=names)
-    report["top_drivers"] = [{"feature": f, "mean_abs_contribution": round(float(v), 4)}
+    importance = pd.Series(np.abs(contrib).mean(axis=0), index=names)       # size only; direction below
+    directions = driver_directions(contrib, names, test)
+    # registration_text sums 64 SVD columns, so its size is not comparable one-to-one with a single feature.
+    report["top_drivers"] = [{"feature": f, "mean_abs_contribution": round(float(v), 4),
+                              "direction": directions[f]}
                              for f, v in importance.sort_values(ascending=False).head(15).items()]
     report["features"] = {"columns": columns, "categories": main.categories,
                           "text_components": len(main.text.columns) if main.text else 0}
@@ -170,8 +209,13 @@ if __name__ == "__main__":
         for name, m in t["models"].items():
             print(f"{name:<22}{m['test']['roc_auc']:>10}{m['recent']['roc_auc']:>12}"
                   f"{m['test']['pr_auc']:>13}{m['test']['precision_top_10pct']:>19}")
-        print("lightgbm test AUC 95% CI:", t["models"]["lightgbm"]["test"]["roc_auc_ci95"])
+        print("lightgbm test AUC 95% CI:", t["models"]["lightgbm"]["test"]["roc_auc_ci95"],
+              " calibration:", t["models"]["lightgbm"]["test"]["calibration_fit"])
         if any(m["test"]["roc_auc"] > 0.85 for m in t["models"].values()):
             print("!! a test AUC above 0.85 — investigate for leakage before believing it")
-    if "by_sponsor_class" in report["targets"]["label"]:
-        print("\nlabel AUC by sponsor class:", report["targets"]["label"]["by_sponsor_class"])
+    for key in ("by_sponsor_class", "by_phase", "by_start_year"):
+        if key in report["targets"]["label"]:
+            print(f"\nlabel AUC {key.replace('_', ' ')}:", report["targets"]["label"][key])
+    print("\nmain model contributors (mean |contribution|, direction):")
+    for d in report["top_drivers"]:
+        print(f"  {d['feature']:<34}{d['mean_abs_contribution']:>8}  {d['direction']}")

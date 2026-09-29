@@ -7,7 +7,7 @@ from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
 
 from ctrisk.config import load_config
-from ctrisk.spark.clean_trials import read_table
+from ctrisk.spark.clean_trials import design_value, flag, read_table
 from ctrisk.spark.session import get_spark
 
 # Top-level MeSH disease categories, as AACT lists them among each trial's condition ancestors
@@ -55,7 +55,7 @@ def build_trial_attributes(trials: DataFrame, countries: DataFrame, eligibilitie
         "nct_id",
         age_years(F.col("minimum_age")).alias("min_age_years"),
         age_years(F.col("maximum_age")).alias("max_age_years"),
-        (F.col("healthy_volunteers") == "t").alias("healthy_volunteers"),
+        flag(F.col("healthy_volunteers")).alias("healthy_volunteers"),
         F.upper("gender").alias("sex"),
         F.size(F.filter(lines, _is_criterion)).alias("criteria_count"),
         F.length(F.coalesce(F.col("criteria"), F.lit(""))).alias("criteria_chars"))
@@ -66,7 +66,7 @@ def build_trial_attributes(trials: DataFrame, countries: DataFrame, eligibilitie
             .agg(*[F.max(F.col("mesh_term") == term).alias(f"area_{key}") for key, term in AREAS.items()]))
 
     party = (responsible_parties
-             .select("nct_id", F.upper("responsible_party_type").alias("responsible_party"))
+             .select("nct_id", design_value(F.col("responsible_party_type")).alias("responsible_party"))
              .dropDuplicates(["nct_id"]))
     collab = sponsors.groupBy("nct_id").agg(
         F.sum((F.lower("lead_or_collaborator") == "collaborator").cast("int")).alias("n_collaborators"))

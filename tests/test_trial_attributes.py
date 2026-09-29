@@ -21,7 +21,7 @@ def attrs(attr_rows):
 def test_one_row_per_trial(attr_rows):
     nct_ids = [r.nct_id for r in attr_rows]
     assert len(nct_ids) == len(set(nct_ids))
-    assert set(nct_ids) == {"NCT001", "NCT002", "NCT003", "NCT009"}
+    assert set(nct_ids) == {"NCT001", "NCT002", "NCT003", "NCT009", "NCT010"}
 
 
 def test_countries_include_removed_ones(attrs):
@@ -79,3 +79,22 @@ def test_registration_time_features(attrs):
     assert attrs["NCT002"].responsible_party == "SPONSOR_INVESTIGATOR"
     b = attrs["NCT003"]                                     # nothing registered beyond the study row
     assert (b.responsible_party, b.n_collaborators, b.n_keywords) == (None, 0, 0)
+
+
+def test_legacy_wording_reads_like_current_wording(spark):
+    """Healthy volunteers and responsible party as older AACT snapshots spell them."""
+    def frame(cols, rows):
+        return spark.createDataFrame(rows, StructType([StructField(c, StringType()) for c in cols]))
+    trials = frame(["nct_id"], [("NCT1",), ("NCT2",)])
+    elig = frame(["nct_id", "gender", "minimum_age", "maximum_age", "healthy_volunteers", "criteria"],
+                 [("NCT1", "All", None, None, "Accepts Healthy Volunteers", None),
+                  ("NCT2", "Female", None, None, "No", None)])
+    parties = frame(["nct_id", "responsible_party_type"],
+                    [("NCT1", "Sponsor-Investigator"), ("NCT2", "Principal Investigator")])
+    empty = {c: frame(["nct_id", c], []) for c in ("name", "mesh_term", "lead_or_collaborator")}
+    rows = {r.nct_id: r for r in build_trial_attributes(
+        trials, empty["name"], elig, empty["mesh_term"], empty["lead_or_collaborator"], parties, empty["name"]
+    ).collect()}
+    assert (rows["NCT1"].healthy_volunteers, rows["NCT1"].sex, rows["NCT1"].responsible_party) \
+        == (True, "ALL", "SPONSOR_INVESTIGATOR")
+    assert (rows["NCT2"].healthy_volunteers, rows["NCT2"].responsible_party) == (False, "PRINCIPAL_INVESTIGATOR")

@@ -1,8 +1,9 @@
 """AACT -> one row per eligible drug trial, with its label.
 
 Population: interventional drug/biologic trials, Phase 1-3.
-  Finished (completed/terminated) and started 2008-2020 -> label 0/1, used for training.
-  Still active                                         -> label null, scored later.
+  Finished (completed/terminated), started 2008 or later -> label 0/1. Training uses 2008-2020
+                                                           starts; later ones feed the backtest.
+  Still active                                          -> label null, scored.
 """
 from pyspark.sql import Column, DataFrame, SparkSession
 from pyspark.sql import functions as F
@@ -16,7 +17,8 @@ ACTIVE = ["NOT_YET_RECRUITING", "RECRUITING", "ACTIVE_NOT_RECRUITING", "ENROLLIN
 DRUG_TYPES = ["DRUG", "BIOLOGICAL"]
 GOVERNMENT = ["NIH", "FED", "OTHER_GOV"]
 DESIGN_COLS = ["allocation", "intervention_model", "primary_purpose", "masking"]
-TRAIN_START, TRAIN_END = "2008-01-01", "2020-12-31"
+TRAIN_START = "2008-01-01"
+MODEL_END = "2021-01-01"     # modelling uses starts before this; later finished trials feed the backtest
 
 # Why a trial stopped, from the free-text reason. First match wins, so a specific cause
 # ("safety") outranks a generic one ("sponsor decision").
@@ -64,12 +66,33 @@ def norm(col: Column) -> Column:
     return F.regexp_replace(c, r"[^A-Z0-9/]+", "_")
 
 
-def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
-                 interventions: DataFrame) -> DataFrame:
-    drug_trials = (interventions
-                   .where(norm(F.col("intervention_type")).isin(DRUG_TYPES))
-                   .select("nct_id").distinct())
+def design_value(col: Column) -> Column:
+    """Registry enum, whichever era wrote it: 'Parallel Assignment' and 'PARALLEL' -> 'PARALLEL',
+    'N/A' -> 'NA', 'Sponsor-Investigator' -> 'SPONSOR_INVESTIGATOR'. Snapshots before the 2023
+    registry modernization use the display wording; current ones use the enum."""
+    c = F.regexp_replace(F.regexp_replace(norm(col), r"_+$", ""), r"_ASSIGNMENT$", "")
+    return F.when(c == "N/A", "NA").otherwise(c)
 
+
+def masking_value(col: Column) -> Column:
+    """'Double Blind (Subject, Investigator)' -> 'DOUBLE'; 'None (Open Label)' -> 'NONE'."""
+    c = norm(col)
+    level = F.regexp_extract(c, r"^(NONE|SINGLE|DOUBLE|TRIPLE|QUADRUPLE)", 1)
+    return (F.when(c.rlike(r"^(NONE|OPEN_LABEL)"), "NONE")
+            .when(level != "", level)
+            .otherwise(F.regexp_replace(c, r"_+$", "")))
+
+
+def flag(col: Column) -> Column:
+    """'t'/'true'/'Yes'/'Accepts Healthy Volunteers' -> True, 'f'/'false'/'No' -> False, else null."""
+    c = F.lower(F.trim(col))
+    return (F.when(c.isin("t", "true", "yes", "y", "1") | c.startswith("accepts"), True)
+            .when(c.isin("f", "false", "no", "n", "0"), False))
+
+
+def study_fields(studies: DataFrame, designs: DataFrame, sponsors: DataFrame) -> DataFrame:
+    """Every study's registry-record fields the model uses, unfiltered. build_trials narrows this to
+    the eligible population; the point-in-time audit reads the same fields from archived snapshots."""
     agency = norm(F.col("agency_class"))
     lead_sponsor = (sponsors
                     .where(F.lower("lead_or_collaborator") == "lead")
@@ -80,20 +103,32 @@ def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
                              .otherwise("OTHER").alias("sponsor_class"))
                     .dropDuplicates(["nct_id"]))
 
-    design = designs.select("nct_id", *[norm(F.col(c)).alias(c) for c in DESIGN_COLS])
-
+    design = designs.select("nct_id", *[(masking_value if c == "masking" else design_value)(F.col(c)).alias(c)
+                                        for c in DESIGN_COLS])
+    start_type = F.col("start_date_type") if "start_date_type" in studies.columns else F.lit(None)
     s = studies.select(
         "nct_id",
         norm(F.col("study_type")).alias("study_type"),
         norm(F.col("overall_status")).alias("status"),
         norm(F.col("phase")).alias("phase"),
         F.to_date("start_date").alias("start_date"),
+        norm(start_type.cast("string")).alias("start_date_type"),
         F.col("number_of_arms").cast("int").alias("number_of_arms"),
         F.col("why_stopped"),
-        F.when(F.col("has_dmc").isNotNull(), F.col("has_dmc") == "t").alias("has_dmc"),
+        flag(F.col("has_dmc")).alias("has_dmc"),
     )
+    return (s.join(design, "nct_id", "left")
+            .join(lead_sponsor, "nct_id", "left"))
+
+
+def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
+                 interventions: DataFrame) -> DataFrame:
+    drug_trials = (interventions
+                   .where(norm(F.col("intervention_type")).isin(DRUG_TYPES))
+                   .select("nct_id").distinct())
+    s = study_fields(studies, designs, sponsors)
     finished = (F.col("status").isin("COMPLETED", "TERMINATED")
-                & F.col("start_date").between(TRAIN_START, TRAIN_END))
+                & (F.col("start_date") >= TRAIN_START))
     eligible = (F.col("study_type") == "INTERVENTIONAL") & F.col("phase").isin(PHASES) \
         & (finished | F.col("status").isin(ACTIVE))
 
@@ -102,9 +137,7 @@ def build_trials(studies: DataFrame, designs: DataFrame, sponsors: DataFrame,
             .withColumn("label", F.when(F.col("status") == "TERMINATED", 1)
                                   .when(F.col("status") == "COMPLETED", 0).cast("int"))
             .withColumn("stop_reason", F.when(F.col("label") == 1, stop_reason(F.col("why_stopped"))))
-            .join(design, "nct_id", "left")
-            .join(lead_sponsor, "nct_id", "left")
-            .drop("study_type", "why_stopped"))
+            .drop("study_type", "why_stopped", "start_date_type"))
 
 
 def build_drug_interventions(interventions: DataFrame, trials: DataFrame) -> DataFrame:

@@ -17,12 +17,12 @@ def trials(aact):
 
 
 def test_keeps_only_eligible_drug_trials(trials):
-    assert set(trials) == {"NCT001", "NCT002", "NCT003", "NCT009"}
+    assert set(trials) == {"NCT001", "NCT002", "NCT003", "NCT009", "NCT010"}   # NCT010: finished 2021 start
 
 
 def test_label_is_terminated_vs_completed_and_null_for_active(trials):
     assert {k: r.label for k, r in trials.items()} == {
-        "NCT001": 0, "NCT002": 1, "NCT003": None, "NCT009": 1,
+        "NCT001": 0, "NCT002": 1, "NCT003": None, "NCT009": 1, "NCT010": 0,
     }
 
 
@@ -54,6 +54,7 @@ def test_drug_interventions_only_for_eligible_trials(aact):
         ("NCT002", "Adalimumab"),
         ("NCT003", "Metformin 500 mg"),
         ("NCT009", "Ibuprofen"),
+        ("NCT010", "Aspirin"),
     ]
 
 
@@ -122,3 +123,48 @@ def test_sponsor_starts_excludes_withdrawn_observational_and_sponsorless(aact):
     # so their exclusion here proves the status/study_type filters, not just the join.
     assert set(rows) == {"NCT001", "NCT002", "NCT003", "NCT009"}
     assert rows["NCT002"] == ("State University", "2015-06-15")
+
+
+@pytest.mark.parametrize("raw, expected", [
+    ("PARALLEL", "PARALLEL"), ("Parallel Assignment", "PARALLEL"),
+    ("Single Group Assignment", "SINGLE_GROUP"), ("CROSSOVER", "CROSSOVER"),
+    ("N/A", "NA"), ("NA", "NA"), ("Non-Randomized", "NON_RANDOMIZED"),
+    ("Supportive Care", "SUPPORTIVE_CARE"), ("Sponsor-Investigator", "SPONSOR_INVESTIGATOR"),
+    (None, None),
+])
+def test_design_value_maps_legacy_registry_wording_to_current_enums(spark, raw, expected):
+    """Archived AACT snapshots predate the 2023 registry modernization; the same answer must map to
+    the same category, or the point-in-time audit would read a format change as a record edit."""
+    from ctrisk.spark.clean_trials import design_value
+    df = spark.createDataFrame([(raw,)], "v string")
+    assert df.select(design_value(F.col("v")).alias("r")).first().r == expected
+
+
+@pytest.mark.parametrize("raw, expected", [
+    ("NONE", "NONE"), ("None (Open Label)", "NONE"), ("Open Label", "NONE"),
+    ("Double", "DOUBLE"), ("Double Blind (Subject, Investigator)", "DOUBLE"), ("QUADRUPLE", "QUADRUPLE"),
+    ("Single Blind (Outcomes Assessor)", "SINGLE"), (None, None),
+])
+def test_masking_value_keeps_only_the_level(spark, raw, expected):
+    from ctrisk.spark.clean_trials import masking_value
+    df = spark.createDataFrame([(raw,)], "v string")
+    assert df.select(masking_value(F.col("v")).alias("r")).first().r == expected
+
+
+@pytest.mark.parametrize("raw, expected", [
+    ("t", True), ("f", False), ("true", True), ("Yes", True), ("No", False),
+    ("Accepts Healthy Volunteers", True), ("", None), (None, None),
+])
+def test_flag_reads_every_boolean_spelling(spark, raw, expected):
+    from ctrisk.spark.clean_trials import flag
+    df = spark.createDataFrame([(raw,)], "v string")
+    assert df.select(flag(F.col("v")).alias("r")).first().r == expected
+
+
+def test_study_fields_keeps_every_study_unfiltered(aact):
+    from ctrisk.spark.clean_trials import study_fields
+    rows = {r.nct_id: r for r in study_fields(aact["studies"], aact["designs"], aact["sponsors"]).collect()}
+    assert len(rows) == 10                                   # observational, withdrawn, Phase 4 included
+    assert (rows["NCT004"].study_type, rows["NCT007"].status) == ("OBSERVATIONAL", "WITHDRAWN")
+    assert (rows["NCT001"].masking, rows["NCT001"].has_dmc, rows["NCT001"].sponsor_class) == ("DOUBLE", True, "INDUSTRY")
+    assert rows["NCT003"].start_date_type == "ANTICIPATED"

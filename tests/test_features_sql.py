@@ -19,7 +19,8 @@ def db():
         ('T5', DATE '2020-06-01', 1,    'business',   'Acme',  'INDUSTRY'),  -- has its own outcome row
         ('T6', DATE '2017-01-01', 0,    NULL,         'Delta', 'OTHER'),     -- first day of the recent years
         ('T7', DATE '2015-01-01', 0,    NULL,         'Eps',   'OTHER'),     -- first day of the test years
-        ('T8', DATE '2014-12-31', 0,    NULL,         'Eps',   'OTHER')      -- last day of the training years""")
+        ('T8', DATE '2014-12-31', 0,    NULL,         'Eps',   'OTHER'),     -- last day of the training years
+        ('T9', DATE '2021-01-01', 0,    NULL,         'Eps',   'OTHER')      -- finished, started after 2020""")
     con.execute("""INSERT INTO RAW_TRIAL_ATTRIBUTES (nct_id, n_countries) VALUES
         ('T1', 3), ('T2', 1), ('T3', 1), ('T4', 1), ('T5', 2), ('T6', 1)""")
     con.execute("INSERT INTO RAW_TRIAL_DRUG_MAP VALUES ('T1', 'drugx'), ('T2', 'drugx'), ('T4', 'drugx')")
@@ -123,3 +124,8 @@ def test_reason_targets(db):
     assert (t2["label_enrollment"], t2["label_safety"]) == (0, 0)      # completed: negative for both
     assert (t5["label_enrollment"], t5["label_safety"]) == (None, None)  # business: out of both
     assert (t3["label_enrollment"], t3["label_safety"]) == (None, None)  # active
+
+
+def test_trials_started_after_2020_are_labeled_but_kept_out_of_training_splits(db):
+    assert features(db, "T9")["split"] == "later"
+    assert features(db, "T6")["split"] == "recent"

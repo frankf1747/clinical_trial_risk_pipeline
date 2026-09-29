@@ -1,6 +1,7 @@
 -include .env
 
-.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score
+.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
+	audit-build audit backtest
 
 setup:
 	uv sync
@@ -8,9 +9,9 @@ setup:
 test:
 	uv run pytest -q
 
-# Usage: make ingest-aact AACT=<url-or-path-to-aact-zip>
+# Usage: make ingest-aact AACT=<url-or-path-to-aact-zip> [DEST=<folder>]
 ingest-aact:
-	uv run python -m ctrisk.ingest.aact $(AACT)
+	uv run python -m ctrisk.ingest.aact $(AACT) $(DEST)
 
 ingest-faers:
 	uv run python -m ctrisk.ingest.faers
@@ -49,3 +50,15 @@ train:
 
 score:
 	uv run python -m ctrisk.ml.score
+
+# M6 point-in-time audit. AACT_ARCHIVES (in .env or on the command line): space-separated monthly
+# AACT flat-file archives, URLs or local zips, named YYYYMMDD_*. Needs `make trials` first.
+audit-build:
+	@test -n "$(strip $(AACT_ARCHIVES))" || (echo "set AACT_ARCHIVES to the archive zips or URLs" && exit 1)
+	uv run python -m ctrisk.spark.point_in_time $(AACT_ARCHIVES)
+
+audit:
+	uv run python -m ctrisk.ml.audit
+
+backtest:
+	uv run python -m ctrisk.ml.backtest
