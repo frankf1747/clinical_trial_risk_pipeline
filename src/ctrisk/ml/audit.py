@@ -33,6 +33,19 @@ def registry_columns(columns) -> list[str]:
     return [c for c in REGISTRY if c in present] + [c for c in present if c.startswith("area_")]
 
 
+def fill_unarchived(pit: pd.DataFrame, latest: pd.DataFrame, columns: list[str]) -> tuple[pd.DataFrame, dict]:
+    """Where an archive could not record a column (null disease areas from archives without MeSH
+    ancestors), keep the latest value. Returns the filled frame and the share filled per column."""
+    out, share = pit.copy(), {}
+    now = latest.set_index("nct_id")
+    for c in columns:
+        if c in out.columns and c in now.columns:
+            missing = out[c].isna()
+            out[c] = out[c].astype(object).where(~missing, out["nct_id"].map(now[c]))
+            share[c] = round(float(missing.mean()), 4)
+    return out, share
+
+
 def overlay(latest: pd.DataFrame, pit: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     """Latest-record rows with `columns` replaced by their archived values; trials without one are dropped."""
     cols = [c for c in columns if c in pit.columns]
@@ -106,6 +119,7 @@ def _both_ways(model, latest: pd.DataFrame, pit: pd.DataFrame, columns: list[str
 
 
 def compare(model, latest: pd.DataFrame, pit: pd.DataFrame, columns: list[str], bootstrap: int = 1000) -> dict:
+    pit, areas_from_latest = fill_unarchived(pit, latest, [c for c in columns if c.startswith("area_")])
     matched = latest[latest["nct_id"].isin(pit["nct_id"])]
     y = matched["label"].to_numpy(dtype=float)
     base = roc_auc_score(y, model.predict_proba(matched))
@@ -125,6 +139,9 @@ def compare(model, latest: pd.DataFrame, pit: pd.DataFrame, columns: list[str], 
         "swap_one_column": dict(sorted(swap_one.items(), key=lambda kv: -kv[1])),
         "change_rates": dict(sorted(change_rates(latest, pit, columns).items(), key=lambda kv: -kv[1]["gap"])),
         "unseen_levels": unseen_levels(pit, getattr(model, "categories", None) or {}),
+        "areas_from_latest": areas_from_latest,
+        "archives": (sorted(pd.to_datetime(pit["archive_date"]).dt.strftime("%Y-%m-%d").unique().tolist())
+                     if "archive_date" in pit.columns else []),
     }
 
 
@@ -156,5 +173,5 @@ if __name__ == "__main__":
         print(f"  {c:<22}{drop:>8}   changed: terminated {report['change_rates'][c]['terminated']:.1%}, "
               f"completed {report['change_rates'][c]['completed']:.1%}")
     if report["unseen_levels"]:
-        print("\n!! archived values the model never saw (format drift, not leakage):", report["unseen_levels"])
+        print("\n!! archived values the model never saw (format drift, or an edit from outside the modelled population):", report["unseen_levels"])
     print(f"\nwrote {out}")

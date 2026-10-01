@@ -78,3 +78,20 @@ def test_compare_measures_the_drop_on_the_same_trials_and_names_the_leaky_column
     assert report["swap_one_column"]["x"] > 0.2 and report["swap_one_column"]["phase"] == 0
     assert report["strict"]["n"] == int((pit["lag_days"] <= 0).sum())
     assert report["change_rates"]["phase"]["gap"] == 0.0
+    assert report["archives"] == []                              # cohort() carries no archive_date
+
+
+def test_compare_lists_the_archives_it_drew_records_from():
+    latest, pit = cohort()
+    pit["archive_date"] = pd.to_datetime(np.where(np.arange(len(pit)) % 2, "2017-12-14", "2017-01-03"))
+    assert compare(ScoreIsX(), latest, pit, ["x"], bootstrap=50)["archives"] == ["2017-01-03", "2017-12-14"]
+
+
+def test_areas_an_archive_cannot_tell_keep_the_latest_value_and_are_counted():
+    from ctrisk.ml.audit import fill_unarchived
+    latest = pd.DataFrame({"nct_id": ["A", "B", "C"], "area_skin": [True, False, True], "phase": ["P1", "P2", "P3"]})
+    pit = pd.DataFrame({"nct_id": ["A", "B", "C"], "area_skin": [None, None, False], "phase": [None, "P2", "P3"]})
+    filled, share = fill_unarchived(pit, latest, ["area_skin"])
+    assert filled["area_skin"].tolist() == [True, False, False]       # C's archive knew: it stays False
+    assert filled["phase"].isna().tolist() == [True, False, False]    # only the named columns are filled
+    assert share == {"area_skin": 0.6667}

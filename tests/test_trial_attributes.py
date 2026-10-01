@@ -87,7 +87,7 @@ def test_legacy_wording_reads_like_current_wording(spark):
         return spark.createDataFrame(rows, StructType([StructField(c, StringType()) for c in cols]))
     trials = frame(["nct_id"], [("NCT1",), ("NCT2",)])
     elig = frame(["nct_id", "gender", "minimum_age", "maximum_age", "healthy_volunteers", "criteria"],
-                 [("NCT1", "All", None, None, "Accepts Healthy Volunteers", None),
+                 [("NCT1", "Both", None, None, "Accepts Healthy Volunteers", None),     # 2017 wording
                   ("NCT2", "Female", None, None, "No", None)])
     parties = frame(["nct_id", "responsible_party_type"],
                     [("NCT1", "Sponsor-Investigator"), ("NCT2", "Principal Investigator")])

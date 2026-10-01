@@ -56,7 +56,7 @@ def build_trial_attributes(trials: DataFrame, countries: DataFrame, eligibilitie
         age_years(F.col("minimum_age")).alias("min_age_years"),
         age_years(F.col("maximum_age")).alias("max_age_years"),
         flag(F.col("healthy_volunteers")).alias("healthy_volunteers"),
-        F.upper("gender").alias("sex"),
+        F.when(F.upper("gender") == "BOTH", "ALL").otherwise(F.upper("gender")).alias("sex"),   # 'Both': archives
         F.size(F.filter(lines, _is_criterion)).alias("criteria_count"),
         F.length(F.coalesce(F.col("criteria"), F.lit(""))).alias("criteria_chars"))
 

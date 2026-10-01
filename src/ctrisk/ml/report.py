@@ -12,6 +12,7 @@ from pathlib import Path
 from ctrisk.ml.features import CATEGORICAL, EDIT_PRONE, FAERS
 
 PENDING = "pending (next `make train`)"
+COHORT_LAST_ARCHIVE = "2020-12-01"     # the audit covers 2017-2020 starts; earlier last archives leave it partial
 POINT_IN_TIME = set(FAERS) | {"sponsor_prior_trials", "sponsor_prior_termination_rate", "sponsor_trials_started_2y"}
 ABLATION_TEXT = {
     "lightgbm_no_text": "without registration text",
@@ -139,7 +140,19 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
     out += ["## Point-in-time audit (2017–2020 starts)", ""]
     if audit:
         m, s = audit["matched"], audit["strict"]
-        out += [f"{audit['n_matched']:,} of {audit['n_cohort']:,} trials had an archived record.", ""]
+        archives = audit.get("archives") or []
+        line = f"{audit['n_matched']:,} of {audit['n_cohort']:,} trials had an archived record"
+        if archives:
+            line += f", drawn from {len(archives)} monthly AACT archives, {archives[0]} to {archives[-1]}"
+        out += [line + ".", ""]
+        if archives and archives[-1] < COHORT_LAST_ARCHIVE:
+            out += [(f"**Partial: archives cover only part of 2017–2020.** Trials that started after {archives[-1]} "
+                     "are matched to an older record or not at all; the decision waits for the full set."), ""]
+        areas = audit.get("areas_from_latest") or {}
+        if areas:
+            share = max(areas.values())
+            out += [("Archives without MeSH ancestors cannot say a trial's top-level disease area; "
+                     f"disease areas kept from the latest record for {_pct(share)} of trials."), ""]
         out += _table(["Trials", "n", "Latest-record AUC", "Point-in-time AUC", "Drop (95% CI)"],
                       [[name, f"{r['n']:,}", f"{r['latest']['roc_auc']:.3f}", f"{r['point_in_time']['roc_auc']:.3f}",
                         f"{r['auc_drop']:+.3f} ({r['auc_drop_ci95'][0]:+.3f} to {r['auc_drop_ci95'][1]:+.3f})"]
@@ -150,7 +163,7 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
                       [[f"`{c}`", _pct(r["terminated"]), _pct(r["completed"]),
                         f"{audit['swap_one_column'].get(c, 0):+.3f}"] for c, r in top])
         if audit.get("unseen_levels"):
-            out += [f"Archived categories the model never saw (format drift, not leakage): {audit['unseen_levels']}", ""]
+            out += [f"Archived categories the model never saw (format drift, or a record edited from outside the modelled population, e.g. phase N/A to Phase 2): {audit['unseen_levels']}", ""]
     else:
         out += ["Not run for this version. See `docs/plans/2026-09-29-m6-honest-model.md`, Task 7.", ""]
     out += ["## Prospective backtest", ""]

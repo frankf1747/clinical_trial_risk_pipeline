@@ -42,3 +42,16 @@ def test_card_reports_new_analyses_audit_and_backtest_when_present():
     assert "| 2013-2014 | 20,000 | 9,000 | 1,300 | 0.702 |" in text
     assert "+0.021 (+0.012 to +0.030)" in text and "`criteria_chars` | 40.0% | 20.0% | +0.009" in text
     assert "| v3 | 2026-10-01 | 900 | 200 | 0.700 (0.660–0.740) |" in text
+
+
+def test_card_says_which_archives_a_partial_audit_used():
+    metrics, manifest, features = load()
+    r = {"n": 5000, "latest": {"roc_auc": 0.71}, "point_in_time": {"roc_auc": 0.7}, "auc_drop": 0.01,
+         "auc_drop_ci95": [0.0, 0.02]}
+    audit = {"n_cohort": 19596, "n_matched": 5000, "matched": r, "strict": r, "change_rates": {},
+             "swap_one_column": {}, "unseen_levels": {}, "archives": ["2017-01-03", "2017-06-08", "2017-12-14"],
+             "areas_from_latest": {"area_neoplasms": 1.0}}
+    text = card(metrics, manifest, features, audit)
+    assert "3 monthly AACT archives, 2017-01-03 to 2017-12-14" in text
+    assert "Partial: archives cover only part of 2017–2020" in text
+    assert "disease areas kept from the latest record for 100.0% of trials" in text

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
+from pyspark.sql.types import StringType
 
 from ctrisk.config import load_config
 from ctrisk.ingest.aact import fetch
@@ -39,6 +40,32 @@ def archive_date(name: str) -> str:
     return "-".join(m.groups())
 
 
+# Archived exports (before the 2023 registry modernization) hard-wrap criteria at ~80 characters, with
+# '~' or only a run of spaces between wrapped lines; current records keep one criterion per '~' line with
+# markdown bullets. Without unwrapping, criteria_count and criteria_chars differ for nearly every trial.
+_BREAK = re.compile(r"\s*[~\n]\s*|\s{2,}(?=(?:[-*•o]|\d{1,2}[.)]|[a-z][.)])\s)"
+                    r"|\s{2,}(?=(?:inclusion|exclusion)[^:]{0,40}criteria\s*:)", re.IGNORECASE)
+_ITEM = re.compile(r"^(?:[-*•o]|\d{1,2}[.)]|[a-z][.)])\s")
+_HEADER = re.compile(r"criteria\s*:?$", re.IGNORECASE)
+
+
+def unwrap_criteria(text: str | None) -> str | None:
+    """An archived criteria block in the current record's layout: one line per criterion, '* ' bullets.
+    Matches the current snapshot's criterion count for ~3 in 4 trials; the rest include real edits."""
+    if text is None:
+        return None
+    out: list[str] = []
+    for seg in _BREAK.split(text):
+        line = re.sub(r"\s+", " ", seg).strip()
+        if not line:
+            continue
+        if _ITEM.match(line) or _HEADER.search(line) or not out or _HEADER.search(out[-1]):
+            out.append(re.sub(r"^[-•o]\s+", "* ", line))
+        else:
+            out[-1] += " " + line                                  # a wrapped continuation
+    return "~".join(out)
+
+
 def registry_features(t: dict, cohort: DataFrame, date: str) -> DataFrame:
     """The model's registry-derived columns for cohort trials present in this archive, tagged with its date."""
     fields = (study_fields(t["studies"], t["designs"], t["sponsors"])
@@ -47,8 +74,16 @@ def registry_features(t: dict, cohort: DataFrame, date: str) -> DataFrame:
               .withColumnRenamed("start_date", "archive_start_date")
               .drop("study_type", "why_stopped", "sponsor_name", "brief_title")      # not model inputs
               .cache())
+    unwrap = F.udf(unwrap_criteria, StringType())
+    t = {**t, "eligibilities": t["eligibilities"].join(cohort.select("nct_id").distinct(), "nct_id", "left_semi")
+                                                .withColumn("criteria", unwrap(F.col("criteria")))}
     attrs = build_trial_attributes(fields, t["countries"], t["eligibilities"], t["browse_conditions"],
                                    t["sponsors"], t["responsible_parties"], t["keywords"])
+    if "mesh_type" not in t["browse_conditions"].columns:
+        # Older archives list only each trial's own MeSH terms, not their ancestors, so the top-level
+        # disease areas would read False for nearly everyone. Unknown, not False; the audit keeps the latest.
+        attrs = attrs.select(*[F.lit(None).cast("boolean").alias(c) if c.startswith("area_") else F.col(c)
+                               for c in attrs.columns])
     text = build_trial_text(fields, t["studies"], t["brief_summaries"], t["eligibilities"], t["keywords"])
     return (fields.join(attrs, "nct_id", "left").join(text, "nct_id", "left")
             .withColumn("archive_date", F.to_date(F.lit(date))))

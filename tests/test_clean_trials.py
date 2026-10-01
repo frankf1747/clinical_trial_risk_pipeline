@@ -134,6 +134,7 @@ def test_brief_title_is_carried_for_display(trials):
     ("Single Group Assignment", "SINGLE_GROUP"), ("CROSSOVER", "CROSSOVER"),
     ("N/A", "NA"), ("NA", "NA"), ("Non-Randomized", "NON_RANDOMIZED"),
     ("Supportive Care", "SUPPORTIVE_CARE"), ("Sponsor-Investigator", "SPONSOR_INVESTIGATOR"),
+    ("Educational/Counseling/Training", "ECT"), ("ECT", "ECT"),
     (None, None),
 ])
 def test_design_value_maps_legacy_registry_wording_to_current_enums(spark, raw, expected):
@@ -148,6 +149,10 @@ def test_design_value_maps_legacy_registry_wording_to_current_enums(spark, raw, 
     ("NONE", "NONE"), ("None (Open Label)", "NONE"), ("Open Label", "NONE"),
     ("Double", "DOUBLE"), ("Double Blind (Subject, Investigator)", "DOUBLE"), ("QUADRUPLE", "QUADRUPLE"),
     ("Single Blind (Outcomes Assessor)", "SINGLE"), (None, None),
+    # Feb-Aug 2017 archives list the masked parties instead of a level
+    ("No masking", "NONE"), ("Participant", "SINGLE"), ("Participant, Investigator", "DOUBLE"),
+    ("Participant, Care Provider, Investigator", "TRIPLE"),
+    ("Participant, Care Provider, Investigator, Outcomes Assessor", "QUADRUPLE"),
 ])
 def test_masking_value_keeps_only_the_level(spark, raw, expected):
     from ctrisk.spark.clean_trials import masking_value
@@ -172,3 +177,42 @@ def test_study_fields_keeps_every_study_unfiltered(aact):
     assert (rows["NCT004"].study_type, rows["NCT007"].status) == ("OBSERVATIONAL", "WITHDRAWN")
     assert (rows["NCT001"].masking, rows["NCT001"].has_dmc, rows["NCT001"].sponsor_class) == ("DOUBLE", True, "INDUSTRY")
     assert rows["NCT003"].start_date_type == "ANTICIPATED"
+
+
+@pytest.mark.parametrize("raw, parties, expected", [
+    ("Double Blind", ("t", "t", "t", "t"), "QUADRUPLE"),     # 2017 wording: "double blind" meant any blinding
+    ("Double Blind", ("t", "f", "t", "f"), "DOUBLE"),
+    ("Double Blind", ("t", "t", "t", "f"), "TRIPLE"),
+    ("Single Blind", ("f", "f", "f", "t"), "SINGLE"),
+    ("Double-Blind", ("f", "f", "f", "f"), "DOUBLE"),         # no parties recorded: keep the wording
+    ("Open Label", ("f", "f", "f", "f"), "NONE"),
+    ("DOUBLE", ("t", "t", "t", "t"), "DOUBLE"),               # current enum already counts parties
+    (None, (None, None, None, None), None),
+])
+def test_masking_value_counts_masked_parties_for_legacy_blind_wording(spark, raw, parties, expected):
+    """Before the 2017 final rule, 'Double Blind' covered 2-4 masked parties; the current enum counts them."""
+    from ctrisk.spark.clean_trials import MASKED_PARTIES, masked_parties, masking_value
+    df = spark.createDataFrame([(raw, *parties)], "v string, " + ", ".join(f"{c} string" for c in MASKED_PARTIES))
+    assert df.select(masking_value(F.col("v"), masked_parties(df.columns)).alias("r")).first().r == expected
+
+
+def test_study_fields_read_a_2017_archive_like_a_current_one(spark):
+    """Archived snapshots: start_month_year instead of start_date, blank allocation for single-arm trials,
+    'U.S. Fed' sponsors. Each must land on the value the current snapshot would give."""
+    from ctrisk.spark.clean_trials import study_fields
+    studies = spark.createDataFrame(
+        [("NCT1", "Interventional", "Completed", "Phase 2", "January 2015", "1", "", "", "t"),
+         ("NCT2", "Interventional", "Terminated", "Phase 1", "March 3, 2016", "2", "", "", "f")],
+        "nct_id string, study_type string, overall_status string, phase string, start_month_year string, "
+        "number_of_arms string, brief_title string, why_stopped string, has_dmc string")
+    designs = spark.createDataFrame(
+        [("NCT1", None, "Single Group Assignment", "Treatment", "Open Label", "f", "f", "f", "f"),
+         ("NCT2", None, "Parallel Assignment", "Treatment", "Double Blind", "t", "t", "t", "t")],
+        "nct_id string, allocation string, intervention_model string, primary_purpose string, masking string, "
+        "subject_masked string, caregiver_masked string, investigator_masked string, outcomes_assessor_masked string")
+    sponsors = spark.createDataFrame([("NCT1", "lead", "VA", "U.S. Fed"), ("NCT2", "lead", "Acme", "Industry")],
+                                     "nct_id string, lead_or_collaborator string, name string, agency_class string")
+    rows = {r.nct_id: r for r in study_fields(studies, designs, sponsors).collect()}
+    assert (str(rows["NCT1"].start_date), str(rows["NCT2"].start_date)) == ("2015-01-31", "2016-03-03")
+    assert (rows["NCT1"].allocation, rows["NCT2"].allocation) == ("NA", None)      # only single-arm blanks are NA
+    assert (rows["NCT1"].sponsor_class, rows["NCT2"].masking) == ("GOVERNMENT", "QUADRUPLE")

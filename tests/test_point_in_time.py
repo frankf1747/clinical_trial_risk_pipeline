@@ -2,7 +2,12 @@ import datetime as dt
 
 import pytest
 
-from ctrisk.spark.point_in_time import archive_date, nearest_archive, registry_features
+from ctrisk.spark.point_in_time import (
+    archive_date,
+    nearest_archive,
+    registry_features,
+    unwrap_criteria,
+)
 
 
 @pytest.mark.parametrize("name, expected", [
@@ -39,3 +44,27 @@ def test_nearest_archive_prefers_the_last_record_on_or_before_start(spark):
                                    "nct_id string, start_date date")
     got = {r.nct_id: (r.x, r.lag_days) for r in nearest_archive(seen, starts).collect()}
     assert got == {"A": (2, -39), "B": (4, 90)}                 # C has no start date to anchor on
+
+
+def test_disease_areas_are_unknown_when_the_archive_lists_no_mesh_ancestors(aact, spark):
+    """Older archives list only each trial's own MeSH terms, so top-level areas would all read False."""
+    cohort = spark.createDataFrame([("NCT001",)], "nct_id string")
+    old = {**aact, "browse_conditions": aact["browse_conditions"].drop("mesh_type", "downcase_mesh_term")}
+    r = registry_features(old, cohort, "2017-01-01").first()
+    assert r.area_neoplasms is None and r.area_cardiovascular is None
+    assert registry_features(aact, cohort, "2017-01-01").first().area_neoplasms is not None
+
+
+@pytest.mark.parametrize("old, current", [
+    # 2017 exports hard-wrap each line at ~80 characters, with '~' or only runs of spaces between lines
+    (("~       Inclusion Criteria:~~          -  Male or female age >18 with WHO Group 1 PAH including~"
+      "            idiopathic PAH~~          -  Signed consent~~        Exclusion Criteria:~~          -  Pregnancy"),
+     ("Inclusion Criteria:~* Male or female age >18 with WHO Group 1 PAH including idiopathic PAH~* Signed consent"
+      "~Exclusion Criteria:~* Pregnancy")),
+    (("Inclusion Criteria:          -  Age at least 18 years          -  Not legally incapacitated"
+      "        Exclusion Criteria:          1. Known allergy"),
+     "Inclusion Criteria:~* Age at least 18 years~* Not legally incapacitated~Exclusion Criteria:~1. Known allergy"),
+    ("", ""),
+])
+def test_unwrap_criteria_rebuilds_one_line_per_criterion_as_the_current_record_stores_it(old, current):
+    assert unwrap_criteria(old) == current

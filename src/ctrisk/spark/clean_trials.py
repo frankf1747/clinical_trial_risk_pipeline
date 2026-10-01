@@ -15,8 +15,10 @@ from ctrisk.spark.session import get_spark
 PHASES = ["PHASE1", "PHASE1/PHASE2", "PHASE2", "PHASE2/PHASE3", "PHASE3"]
 ACTIVE = ["NOT_YET_RECRUITING", "RECRUITING", "ACTIVE_NOT_RECRUITING", "ENROLLING_BY_INVITATION"]
 DRUG_TYPES = ["DRUG", "BIOLOGICAL"]
-GOVERNMENT = ["NIH", "FED", "OTHER_GOV"]
+GOVERNMENT = ["NIH", "FED", "OTHER_GOV", "U_S_FED"]          # U_S_FED: archived snapshots' "U.S. Fed"
 DESIGN_COLS = ["allocation", "intervention_model", "primary_purpose", "masking"]
+MASKED_PARTIES = ["subject_masked", "caregiver_masked", "investigator_masked", "outcomes_assessor_masked"]
+MASKING_LEVELS = ["SINGLE", "DOUBLE", "TRIPLE", "QUADRUPLE"]      # by number of masked parties
 TRAIN_START = "2008-01-01"
 MODEL_END = "2021-01-01"     # modelling uses starts before this; later finished trials feed the backtest
 
@@ -71,16 +73,37 @@ def design_value(col: Column) -> Column:
     'N/A' -> 'NA', 'Sponsor-Investigator' -> 'SPONSOR_INVESTIGATOR'. Snapshots before the 2023
     registry modernization use the display wording; current ones use the enum."""
     c = F.regexp_replace(F.regexp_replace(norm(col), r"_+$", ""), r"_ASSIGNMENT$", "")
-    return F.when(c == "N/A", "NA").otherwise(c)
+    return (F.when(c == "N/A", "NA")
+            .when(c == "EDUCATIONAL/COUNSELING/TRAINING", "ECT")          # the current enum's abbreviation
+            .otherwise(c))
 
 
-def masking_value(col: Column) -> Column:
-    """'Double Blind (Subject, Investigator)' -> 'DOUBLE'; 'None (Open Label)' -> 'NONE'."""
+def masked_parties(columns) -> Column | None:
+    """How many of subject, caregiver, investigator and outcomes assessor are masked, where recorded."""
+    present = [c for c in MASKED_PARTIES if c in columns]
+    if not present:
+        return None
+    return sum(F.coalesce(flag(F.col(c)).cast("int"), F.lit(0)) for c in present)
+
+
+def masking_value(col: Column, parties: Column | None = None) -> Column:
+    """'Double Blind (Subject, Investigator)' -> 'DOUBLE'; 'None (Open Label)' -> 'NONE'.
+
+    Before the 2017 final rule the registry said 'Double Blind' for any blinding of two or more parties;
+    the current enum counts them (DOUBLE, TRIPLE, QUADRUPLE). For that legacy '... Blind' wording, the
+    level comes from the number of masked parties when the snapshot records them."""
     c = norm(col)
     level = F.regexp_extract(c, r"^(NONE|SINGLE|DOUBLE|TRIPLE|QUADRUPLE)", 1)
-    return (F.when(c.rlike(r"^(NONE|OPEN_LABEL)"), "NONE")
-            .when(level != "", level)
-            .otherwise(F.regexp_replace(c, r"_+$", "")))
+    # Feb-Aug 2017 archives name the masked parties ('Participant, Investigator') or say 'No masking'
+    named = sum(c.contains(p).cast("int") for p in ("PARTICIPANT", "CARE_PROVIDER", "INVESTIGATOR", "OUTCOMES_ASSESSOR"))
+    out = (F.when(c.rlike(r"^(NONE|OPEN_LABEL|NO_MASKING)"), "NONE")
+           .when(level != "", level)
+           .when(named > 0, F.element_at(F.array(*[F.lit(v) for v in MASKING_LEVELS]), named))
+           .otherwise(F.regexp_replace(c, r"_+$", "")))
+    if parties is None:
+        return out
+    counted = F.element_at(F.array(*[F.lit(v) for v in MASKING_LEVELS]), F.least(parties, F.lit(4)))
+    return F.when(c.contains("BLIND") & (parties > 0), counted).otherwise(out)
 
 
 def flag(col: Column) -> Column:
@@ -103,15 +126,26 @@ def study_fields(studies: DataFrame, designs: DataFrame, sponsors: DataFrame) ->
                              .otherwise("OTHER").alias("sponsor_class"))
                     .dropDuplicates(["nct_id"]))
 
-    design = designs.select("nct_id", *[(masking_value if c == "masking" else design_value)(F.col(c)).alias(c)
-                                        for c in DESIGN_COLS])
+    parties = masked_parties(designs.columns)
+    design = (designs
+              .select("nct_id", *[(masking_value(F.col(c), parties) if c == "masking" else design_value(F.col(c))).alias(c)
+                                  for c in DESIGN_COLS])
+              # Archived snapshots leave allocation blank for single-arm trials; the current registry says N/A
+              .withColumn("allocation", F.when(F.col("allocation").isNull()
+                                               & (F.col("intervention_model") == "SINGLE_GROUP"), "NA")
+                                         .otherwise(F.col("allocation"))))
     start_type = F.col("start_date_type") if "start_date_type" in studies.columns else F.lit(None)
+    if "start_date" in studies.columns:
+        start = F.to_date("start_date")
+    else:   # archived snapshots: 'January 2015' (month only, dated to its last day as AACT does now) or 'March 3, 2016'
+        month_year = F.trim(F.col("start_month_year"))
+        start = F.coalesce(F.to_date(month_year, "MMMM d, yyyy"), F.last_day(F.to_date(month_year, "MMMM yyyy")))
     s = studies.select(
         "nct_id",
         norm(F.col("study_type")).alias("study_type"),
         norm(F.col("overall_status")).alias("status"),
         norm(F.col("phase")).alias("phase"),
-        F.to_date("start_date").alias("start_date"),
+        start.alias("start_date"),
         norm(start_type.cast("string")).alias("start_date_type"),
         F.col("number_of_arms").cast("int").alias("number_of_arms"),
         F.col("brief_title"),                               # display only, never a model input
