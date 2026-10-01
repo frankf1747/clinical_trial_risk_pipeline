@@ -1,0 +1,47 @@
+{
+  "version": 3,
+  "snowflake_clone": "TRIAL_FEATURES_V3",
+  "git": "75fd592",
+  "trained_at": "2026-09-30T03:41:20.772004+00:00",
+  "params": {
+    "label": {
+      "n_estimators": 123,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "random_state": 0,
+      "verbose": -1,
+      "metric": "auc",
+      "num_leaves": 63,
+      "learning_rate": 0.03,
+      "min_child_samples": 200
+    },
+    "label_enrollment": {
+      "n_estimators": 249,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "random_state": 0,
+      "verbose": -1,
+      "metric": "auc",
+      "num_leaves": 31,
+      "learning_rate": 0.03,
+      "min_child_samples": 200
+    },
+    "label_safety": {
+      "n_estimators": 118,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "random_state": 0,
+      "verbose": -1,
+      "metric": "auc",
+      "num_leaves": 31,
+      "learning_rate": 0.03,
+      "min_child_samples": 200
+    }
+  },
+  "train": "start 2008-2014 (tuned on <2013 vs 2013-2014)",
+  "test": "start 2015-2016",
+  "recent": "start 2017-2020"
+}

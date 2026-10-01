@@ -1,0 +1,460 @@
+{
+  "n_cohort": 19596,
+  "n_matched": 5482,
+  "latest_full_cohort_auc": 0.7129,
+  "matched": {
+    "n": 5482,
+    "latest": {
+      "n": 5482,
+      "positives": 1071,
+      "base_rate": 0.1954,
+      "roc_auc": 0.6761,
+      "pr_auc": 0.3108,
+      "precision_top_10pct": 0.3522,
+      "brier": 0.1501,
+      "roc_auc_ci95": [
+        0.6582,
+        0.6933
+      ],
+      "calibration_fit": {
+        "intercept": 0.3364,
+        "slope": 0.9415
+      }
+    },
+    "point_in_time": {
+      "n": 5482,
+      "positives": 1071,
+      "base_rate": 0.1954,
+      "roc_auc": 0.6679,
+      "pr_auc": 0.2976,
+      "precision_top_10pct": 0.3266,
+      "brier": 0.1515,
+      "roc_auc_ci95": [
+        0.6507,
+        0.6848
+      ],
+      "calibration_fit": {
+        "intercept": 0.3625,
+        "slope": 0.888
+      },
+      "calibration": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0282,
+          "observed": 0.0328,
+          "n": 549
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0546,
+          "observed": 0.0803,
+          "n": 548
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0806,
+          "observed": 0.1077,
+          "n": 548
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.1062,
+          "observed": 0.1661,
+          "n": 548
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.1282,
+          "observed": 0.1843,
+          "n": 548
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.151,
+          "observed": 0.2482,
+          "n": 548
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.1742,
+          "observed": 0.25,
+          "n": 548
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.2014,
+          "observed": 0.2774,
+          "n": 548
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.2365,
+          "observed": 0.281,
+          "n": 548
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.3129,
+          "observed": 0.326,
+          "n": 549
+        }
+      ]
+    },
+    "auc_drop": 0.0082,
+    "auc_drop_ci95": [
+      0.0017,
+      0.0147
+    ]
+  },
+  "strict": {
+    "n": 3788,
+    "latest": {
+      "n": 3788,
+      "positives": 839,
+      "base_rate": 0.2215,
+      "roc_auc": 0.6443,
+      "pr_auc": 0.3235,
+      "precision_top_10pct": 0.372,
+      "brier": 0.1679,
+      "roc_auc_ci95": [
+        0.624,
+        0.6647
+      ],
+      "calibration_fit": {
+        "intercept": 0.3859,
+        "slope": 0.841
+      }
+    },
+    "point_in_time": {
+      "n": 3788,
+      "positives": 839,
+      "base_rate": 0.2215,
+      "roc_auc": 0.6376,
+      "pr_auc": 0.3103,
+      "precision_top_10pct": 0.3483,
+      "brier": 0.1695,
+      "roc_auc_ci95": [
+        0.618,
+        0.6581
+      ],
+      "calibration_fit": {
+        "intercept": 0.4212,
+        "slope": 0.7887
+      },
+      "calibration": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0366,
+          "observed": 0.0607,
+          "n": 379
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0716,
+          "observed": 0.0976,
+          "n": 379
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.1005,
+          "observed": 0.1768,
+          "n": 379
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.1227,
+          "observed": 0.1931,
+          "n": 378
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.1437,
+          "observed": 0.2454,
+          "n": 379
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.1649,
+          "observed": 0.2427,
+          "n": 379
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.1864,
+          "observed": 0.2646,
+          "n": 378
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.2124,
+          "observed": 0.3008,
+          "n": 379
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.2463,
+          "observed": 0.285,
+          "n": 379
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.3203,
+          "observed": 0.3483,
+          "n": 379
+        }
+      ]
+    },
+    "auc_drop": 0.0067,
+    "auc_drop_ci95": [
+      -0.0021,
+      0.0157
+    ]
+  },
+  "lag_days": {
+    "p10": -102.89999999999998,
+    "median": -9.0,
+    "p90": 41.0
+  },
+  "swap_one_column": {
+    "us_only": 0.0065,
+    "n_countries": 0.0019,
+    "n_collaborators": 0.0011,
+    "phase": 0.0009,
+    "responsible_party": 0.0005,
+    "number_of_arms": 0.0002,
+    "intervention_model": 0.0002,
+    "max_age_years": 0.0002,
+    "criteria_chars": 0.0001,
+    "allocation": 0.0,
+    "sponsor_class": 0.0,
+    "min_age_years": -0.0,
+    "sex": -0.0,
+    "criteria_count": 0.0,
+    "n_keywords": 0.0,
+    "area_neoplasms": 0.0,
+    "area_cardiovascular": 0.0,
+    "area_nervous_system": 0.0,
+    "area_mental": 0.0,
+    "area_infections": 0.0,
+    "area_respiratory": 0.0,
+    "area_digestive": 0.0,
+    "area_metabolic": 0.0,
+    "area_immune": 0.0,
+    "area_skin": 0.0,
+    "area_musculoskeletal": 0.0,
+    "area_urogenital": 0.0,
+    "area_blood": 0.0,
+    "area_endocrine": 0.0,
+    "primary_purpose": -0.0001,
+    "masking": -0.0001,
+    "has_dmc": -0.0001,
+    "healthy_volunteers": -0.0012,
+    "text": -0.0025
+  },
+  "change_rates": {
+    "criteria_count": {
+      "terminated": 0.5453,
+      "completed": 0.4643,
+      "gap": 0.081
+    },
+    "n_keywords": {
+      "terminated": 0.1223,
+      "completed": 0.0807,
+      "gap": 0.0416
+    },
+    "criteria_chars": {
+      "terminated": 0.888,
+      "completed": 0.8495,
+      "gap": 0.0385
+    },
+    "n_countries": {
+      "terminated": 0.4127,
+      "completed": 0.38,
+      "gap": 0.0327
+    },
+    "us_only": {
+      "terminated": 0.1727,
+      "completed": 0.1403,
+      "gap": 0.0324
+    },
+    "phase": {
+      "terminated": 0.0803,
+      "completed": 0.0537,
+      "gap": 0.0266
+    },
+    "responsible_party": {
+      "terminated": 0.0756,
+      "completed": 0.0501,
+      "gap": 0.0255
+    },
+    "number_of_arms": {
+      "terminated": 0.1363,
+      "completed": 0.1163,
+      "gap": 0.02
+    },
+    "intervention_model": {
+      "terminated": 0.0738,
+      "completed": 0.0546,
+      "gap": 0.0191
+    },
+    "allocation": {
+      "terminated": 0.0803,
+      "completed": 0.0623,
+      "gap": 0.018
+    },
+    "max_age_years": {
+      "terminated": 0.0812,
+      "completed": 0.0673,
+      "gap": 0.0139
+    },
+    "n_collaborators": {
+      "terminated": 0.1111,
+      "completed": 0.1004,
+      "gap": 0.0107
+    },
+    "has_dmc": {
+      "terminated": 0.057,
+      "completed": 0.0492,
+      "gap": 0.0078
+    },
+    "sex": {
+      "terminated": 0.0093,
+      "completed": 0.0052,
+      "gap": 0.0041
+    },
+    "min_age_years": {
+      "terminated": 0.0336,
+      "completed": 0.0333,
+      "gap": 0.0003
+    },
+    "text": {
+      "terminated": 1.0,
+      "completed": 1.0,
+      "gap": 0.0
+    },
+    "area_neoplasms": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_cardiovascular": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_nervous_system": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_mental": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_infections": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_respiratory": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_digestive": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_metabolic": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_immune": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_skin": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_musculoskeletal": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_urogenital": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_blood": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "area_endocrine": {
+      "terminated": 0.0,
+      "completed": 0.0,
+      "gap": 0.0
+    },
+    "sponsor_class": {
+      "terminated": 0.0121,
+      "completed": 0.0122,
+      "gap": -0.0001
+    },
+    "healthy_volunteers": {
+      "terminated": 0.0028,
+      "completed": 0.0086,
+      "gap": -0.0058
+    },
+    "primary_purpose": {
+      "terminated": 0.0121,
+      "completed": 0.0184,
+      "gap": -0.0062
+    },
+    "masking": {
+      "terminated": 0.0308,
+      "completed": 0.039,
+      "gap": -0.0082
+    }
+  },
+  "unseen_levels": {
+    "phase": 0.0223,
+    "primary_purpose": 0.0004
+  },
+  "areas_from_latest": {
+    "area_neoplasms": 1.0,
+    "area_cardiovascular": 1.0,
+    "area_nervous_system": 1.0,
+    "area_mental": 1.0,
+    "area_infections": 1.0,
+    "area_respiratory": 1.0,
+    "area_digestive": 1.0,
+    "area_metabolic": 1.0,
+    "area_immune": 1.0,
+    "area_skin": 1.0,
+    "area_musculoskeletal": 1.0,
+    "area_urogenital": 1.0,
+    "area_blood": 1.0,
+    "area_endocrine": 1.0
+  },
+  "archives": [
+    "2017-01-03",
+    "2017-02-16",
+    "2017-03-07",
+    "2017-03-30",
+    "2017-04-27",
+    "2017-06-08",
+    "2017-06-28",
+    "2017-08-09",
+    "2017-08-31",
+    "2017-10-13",
+    "2017-10-31",
+    "2017-12-14"
+  ]
+}

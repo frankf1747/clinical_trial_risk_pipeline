@@ -1,0 +1,106 @@
+{
+  "columns": [
+    "phase",
+    "number_of_arms",
+    "allocation",
+    "intervention_model",
+    "primary_purpose",
+    "masking",
+    "sponsor_class",
+    "has_dmc",
+    "n_countries",
+    "us_only",
+    "min_age_years",
+    "max_age_years",
+    "healthy_volunteers",
+    "sex",
+    "criteria_count",
+    "criteria_chars",
+    "area_neoplasms",
+    "area_cardiovascular",
+    "area_nervous_system",
+    "area_mental",
+    "area_infections",
+    "area_respiratory",
+    "area_digestive",
+    "area_metabolic",
+    "area_immune",
+    "area_skin",
+    "area_musculoskeletal",
+    "area_urogenital",
+    "area_blood",
+    "area_endocrine",
+    "responsible_party",
+    "n_collaborators",
+    "n_keywords",
+    "sponsor_prior_trials",
+    "sponsor_prior_termination_rate",
+    "sponsor_trials_started_2y",
+    "n_substances",
+    "faers_reports",
+    "faers_reports_12m",
+    "faers_serious_share",
+    "faers_death_share",
+    "has_faers_history"
+  ],
+  "categories": {
+    "phase": [
+      "PHASE1",
+      "PHASE1/PHASE2",
+      "PHASE2",
+      "PHASE2/PHASE3",
+      "PHASE3"
+    ],
+    "allocation": [
+      "NA",
+      "NON_RANDOMIZED",
+      "RANDOMIZED",
+      "missing"
+    ],
+    "intervention_model": [
+      "CROSSOVER",
+      "FACTORIAL",
+      "PARALLEL",
+      "SEQUENTIAL",
+      "SINGLE_GROUP",
+      "missing"
+    ],
+    "primary_purpose": [
+      "BASIC_SCIENCE",
+      "DIAGNOSTIC",
+      "HEALTH_SERVICES_RESEARCH",
+      "OTHER",
+      "PREVENTION",
+      "SCREENING",
+      "SUPPORTIVE_CARE",
+      "TREATMENT",
+      "missing"
+    ],
+    "masking": [
+      "DOUBLE",
+      "NONE",
+      "QUADRUPLE",
+      "SINGLE",
+      "TRIPLE",
+      "missing"
+    ],
+    "sponsor_class": [
+      "GOVERNMENT",
+      "INDUSTRY",
+      "OTHER"
+    ],
+    "sex": [
+      "ALL",
+      "FEMALE",
+      "MALE",
+      "missing"
+    ],
+    "responsible_party": [
+      "PRINCIPAL_INVESTIGATOR",
+      "SPONSOR",
+      "SPONSOR_INVESTIGATOR",
+      "missing"
+    ]
+  },
+  "text_components": 64
+}

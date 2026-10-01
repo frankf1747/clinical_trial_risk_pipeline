@@ -2,7 +2,7 @@
 
 Ranks Phase 1–3 drug trials by their risk of early termination, from the registry record, the sponsor's track record before the trial started, and the drug's FAERS reporting history before the trial started.
 
-**Caveat first.** Sponsor and FAERS features are computed as of each trial's start date. The registry-record features (design, eligibility, geography, text) come from the latest version of each record, because the AACT snapshot holds only that version. Records are edited during trials, so the held-out AUC below may be inflated by post-start edits. M6 measures this (`docs/plans/2026-09-29-m6-honest-model.md`). Until then, treat the results as preliminary: AUC measures ranking, the risk percentages are calibrated only on the 2015–2016 cohort, and per-trial contributors are model contributions, not causes.
+**Caveat first.** Sponsor and FAERS features are computed as of each trial's start date. The registry-record features (design, eligibility, geography, text) come from the latest version of each record, because the AACT snapshot holds only that version. Records are edited during trials, so the held-out AUC below may be inflated by post-start edits. Two M6 checks bound this so far: a model without any edit-prone field or text loses 0.028 AUC (an upper bound on what those edits could explain), and a first point-in-time audit on 2017 registry archives finds a 0.008 drop (95% CI 0.002–0.015) when registry fields are taken as they stood at start. That audit covers 12 of the 49 planned archives (5,482 of 19,596 trials), so it is not yet a verdict (`docs/audits/2026-09-30-point-in-time.md`). Until it is, treat the results as preliminary: AUC measures ranking, the risk percentages are calibrated only on the 2015–2016 cohort, and per-trial contributors are model contributions, not causes.
 
 Design: `docs/specs/2026-09-26-design.md`.
 
@@ -23,7 +23,7 @@ make warehouse                                # Snowflake: RAW_* -> TRIAL_FEATUR
 make train                                    # clone TRIAL_FEATURES, fit, save models/vN
 make score                                    # overall + enrollment risk for active trials -> TRIAL_RISK_SCORES
 make dashboard                                # Snowflake serving views -> docs/dashboard/index.html
-make audit-build                              # M6: registry features from archived AACT snapshots (AACT_ARCHIVES in .env)
+make audit-build                              # M6: registry features from archived AACT snapshots (AACT_ARCHIVES in .env; see the audit note for how to get them)
 make audit                                    # M6: latest-record vs point-in-time AUC on 2017-2020 starts
 make backtest                                 # scores written earlier vs outcomes known now
 make report                                   # docs/model_card.md: the full validation report for the latest model
@@ -83,17 +83,30 @@ M3 in Snowflake (`TRIAL_FEATURES`, built from GCS in ~50 s; all checks pass):
 
 The test split's higher termination rate is expected: only trials finished by the snapshot have a label, and terminated trials finish sooner. A hand check of one trial (NCT00456846) against the raw tables matched on every FAERS and sponsor feature.
 
-## Results (model v2, trained on starts 2008–2014, tested on resolved 2015–2016)
+## Results (model v3, trained on starts 2008–2014, tested on resolved 2015–2016)
 
 | Target | Test ROC AUC (95% CI) | Baseline (logistic) | Top-10% precision vs base rate |
 |---|---|---|---|
-| Any termination | **0.716** (0.703–0.729) | 0.678 | 33.8% vs 14.8% (2.3×) |
-| Terminated for enrollment | **0.791** (0.773–0.810) | 0.764 | 17.5% vs ~5% (3.5×) |
-| Terminated for safety | 0.666 (0.609–0.720) | 0.669 | 87 test positives — too few to be conclusive |
+| Any termination | **0.714** (0.700–0.726) | 0.678 | 33.5% vs 14.8% (2.3×) |
+| Terminated for enrollment | **0.790** (0.771–0.808) | 0.764 | 18.4% vs 5.1% (3.6×) |
+| Terminated for safety | 0.665 (0.608–0.724) | 0.669 | 87 test positives — too few to be conclusive |
 
-What each ingredient adds (any-termination model, test AUC): registration text +0.016, burden features +0.011, FAERS reporting history +0.002. By sponsor: industry 0.743, academic/other 0.672, government 0.671. On the censored 2017–2020 trials the AUC is 0.711, close to the headline.
+v3 is v2 retrained after the M6 changes (same splits and trial counts; v2 scored 0.716 (0.703–0.729), within noise). What each ingredient adds (any-termination model, test AUC): registration text +0.014, burden features +0.009, FAERS reporting history +0.000. By sponsor: industry 0.741, academic/other 0.667, government 0.696. On the censored 2017–2020 trials the AUC is 0.713, close to the headline.
 
-### Validation summary (v2, any termination)
+**How much could post-start edits explain?** A model without any edit-prone field (criteria count and length, countries, US-only, collaborators, keywords, responsible party, DMC) and without the text scores 0.686: 0.028 below the full model. That is a ceiling: those fields also carry real signal, so edits explain at most that much, likely less. The partial point-in-time audit (below) puts the drop at 0.008, almost all from the country fields (`us_only` 0.007, `n_countries` 0.002).
+
+**Is 2015–2016 typical?** Rolling-origin windows, each trained only on earlier starts:
+
+| Test starts | Train trials | Test trials | Terminated | AUC | Calibration intercept, slope |
+|---|---|---|---|---|---|
+| 2012–2013 | 20,920 | 10,069 | 1,380 | 0.718 | −0.03, 1.04 |
+| 2013–2014 | 25,965 | 10,321 | 1,394 | 0.734 | −0.02, 1.14 |
+| 2014–2015 | 30,989 | 10,544 | 1,512 | 0.712 | 0.09, 1.04 |
+| 2015–2016 | 36,286 | 10,242 | 1,513 | 0.714 | 0.10, 1.06 |
+
+The headline window is typical (0.712–0.734), and calibration holds across windows: slopes near 1, intercepts within ±0.1.
+
+### Validation summary (v3, any termination)
 
 The full report, generated from the model's own metrics files, is [`docs/model_card.md`](docs/model_card.md): predictors and when each was measured, sample sizes, tuning, discrimination, calibration, ablations including a model without any edit-prone field, rolling-origin windows, subgroups, the point-in-time audit and the prospective backtest.
 
@@ -101,17 +114,22 @@ The full report, generated from the model's own metrics files, is [`docs/model_c
 |---|---|---|---|
 | Start years | 2008–2014 | 2015–2016 | 2017–2020 |
 | Trials | 36,286 | 10,242 | 19,596 |
-| Terminated | ≈5,055 (13.9%) | ≈1,513 (14.8%) | ≈3,659 (18.7%) |
+| Terminated | 5,055 (13.9%) | 1,513 (14.8%) | 3,658 (18.7%) |
 | Use | fit; tuned on <2013 vs 2013–2014 | headline metrics, calibration | reported with censoring caveat |
 
 - **Outcome:** `overall_status = TERMINATED` (1) vs `COMPLETED` (0). Withdrawn, suspended, unknown-status and still-running trials carry no label and are left out of every split. The recent years over-represent early terminations, because terminated trials finish sooner.
 - **Never touched by tuning or text fitting:** the 2015–2016 rows. Tuning picks from a 12-point LightGBM grid by AUC on an inner time split inside the training years, with early stopping. TF-IDF and SVD are fit on training rows only. `tests/test_ml_train.py` pins both.
 - **Text model:** TF-IDF over word 1–2grams (min_df 20, at most 50k terms), TruncatedSVD to 64 components.
 - **Missing data:** LightGBM's native handling; median imputation plus missing indicators for the logistic baseline.
-- **Calibration (test):** Brier 0.117. Deciles in `models/v2/metrics.json` track the diagonal within 3 points; the top decile predicts 31.6% and observes 33.8%. Calibration intercept and slope, AUC by phase and by start year, and exact event counts come from the next `make train` (added in M6).
-- **Main model contributors** (`top_drivers` in `metrics.json`, `TOP_DRIVER_1..3` in `TRIAL_RISK_SCORES`) are LightGBM SHAP contributions in log-odds. They say what moved a score, not why a trial would stop. From M6 on, each per-trial contributor reads `feature=value` with its signed contribution (e.g. `healthy_volunteers=No`, +0.21), and the global list gives the direction per value.
+- **Calibration (test):** Brier 0.117; calibration intercept 0.10 (risk slightly under-predicted overall) and slope 1.06 (1 is ideal). Deciles in `models/v3/metrics.json`.
+- **By phase (test AUC):** Phase 1 0.753, Phase 1/2 0.692, Phase 2 0.678, Phase 2/3 0.655, Phase 3 0.688. **By start year:** 2015 0.699, 2016 0.730.
+- **Main model contributors** (`top_drivers` in `metrics.json`, `TOP_DRIVER_1..3` in `TRIAL_RISK_SCORES`) are LightGBM SHAP contributions in log-odds. They say what moved a score, not why a trial would stop. From v3 on, each per-trial contributor reads `feature=value` with its signed contribution (e.g. `healthy_volunteers=No`, +0.18), and the global list gives the direction per value: `healthy_volunteers` No +0.15 / Yes −0.42, `us_only` Yes +0.16 / No −0.12, sponsor prior termination rate high third +0.19 / low third −0.14. v2 score rows keep bare names; `MODEL_VERSION` tells them apart.
 
-v1 (M4) scored 0.693. The v2 gain comes from registration text, trial-governance fields (DMC, responsible party, collaborators), sponsor activity, and tuning on an inner time split — after removing four leakage sources found in review (outcome measures rewritten at results posting, termination wording in summaries, negated "no safety concerns" reasons, and a sponsor feature that skewed at scoring time).
+v1 (M4) scored 0.693. The v2 gain (kept in v3) comes from registration text, trial-governance fields (DMC, responsible party, collaborators), sponsor activity, and tuning on an inner time split — after removing four leakage sources found in review (outcome measures rewritten at results posting, termination wording in summaries, negated "no safety concerns" reasons, and a sponsor feature that skewed at scoring time).
+
+**Point-in-time audit (partial).** For 2017–2020 starts, the registry fields were rebuilt from monthly AACT archives as each record stood at the trial's start, and v3 was scored both ways on the same trials. On the 12 archives from 2017 (5,482 trials), AUC drops from 0.676 to 0.668 (0.008, paired 95% CI 0.002–0.015); on the 3,788 whose archived record predates the start, by 0.007 (CI −0.002 to 0.016). The drop sits in `us_only` and `n_countries`; `criteria_count` changes more often for terminated trials (+8 points) but carries no AUC. Nine format changes between the 2017 exports and today's had to be harmonized first (masking, criteria wrapping, start dates and others), each tested. The 2018–2021 archives are still to come, so the latest-record caveat stays. Full note: `docs/audits/2026-09-30-point-in-time.md`.
+
+**Prospective backtest.** `make backtest` joins scores written earlier with outcomes known now. Baseline `models/backtest_2026-10-01.json`: none of the 29,894 trials scored by v2 or v3 has resolved yet; re-run yearly.
 
 Limitations: stop reasons come from free text (safety labels are ~70–80% precise); registry features describe the latest record (see the caveat at the top); planned enrollment is excluded because the current record leaks the outcome. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence (FDA). They add little here; the full 113 GB history is the next test of that.
 
