@@ -1,0 +1,1280 @@
+{
+  "targets": {
+    "label": {
+      "description": "any termination",
+      "params": {
+        "n_estimators": 211,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "random_state": 0,
+        "verbose": -1,
+        "metric": "auc",
+        "num_leaves": 63,
+        "learning_rate": 0.03,
+        "min_child_samples": 200
+      },
+      "grid": [
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 236,
+          "val_auc": 0.7232
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 329,
+          "val_auc": 0.7234
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 94,
+          "val_auc": 0.7199
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 149,
+          "val_auc": 0.7194
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 251,
+          "val_auc": 0.7264
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 141,
+          "val_auc": 0.7251
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 166,
+          "val_auc": 0.7179
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 69,
+          "val_auc": 0.7196
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 222,
+          "val_auc": 0.7275
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 211,
+          "val_auc": 0.7279
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 68,
+          "val_auc": 0.7186
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 78,
+          "val_auc": 0.7247
+        }
+      ],
+      "models": {
+        "logistic_regression": {
+          "test": {
+            "n": 10242,
+            "positives": 1513,
+            "base_rate": 0.1477,
+            "roc_auc": 0.6713,
+            "pr_auc": 0.2424,
+            "precision_top_10pct": 0.2744,
+            "brier": 0.1204
+          },
+          "recent": {
+            "n": 19596,
+            "positives": 3658,
+            "base_rate": 0.1867,
+            "roc_auc": 0.6781,
+            "pr_auc": 0.286,
+            "precision_top_10pct": 0.3214,
+            "brier": 0.1465
+          }
+        },
+        "lightgbm": {
+          "test": {
+            "n": 10242,
+            "positives": 1513,
+            "base_rate": 0.1477,
+            "roc_auc": 0.7033,
+            "pr_auc": 0.2641,
+            "precision_top_10pct": 0.3047,
+            "brier": 0.1183,
+            "roc_auc_ci95": [
+              0.6901,
+              0.7156
+            ],
+            "calibration": [
+              {
+                "bin": 0,
+                "mean_predicted": 0.0174,
+                "observed": 0.0185,
+                "n": 1025
+              },
+              {
+                "bin": 1,
+                "mean_predicted": 0.0363,
+                "observed": 0.0439,
+                "n": 1024
+              },
+              {
+                "bin": 2,
+                "mean_predicted": 0.0574,
+                "observed": 0.0762,
+                "n": 1024
+              },
+              {
+                "bin": 3,
+                "mean_predicted": 0.0811,
+                "observed": 0.085,
+                "n": 1024
+              },
+              {
+                "bin": 4,
+                "mean_predicted": 0.1057,
+                "observed": 0.1396,
+                "n": 1024
+              },
+              {
+                "bin": 5,
+                "mean_predicted": 0.1316,
+                "observed": 0.1543,
+                "n": 1024
+              },
+              {
+                "bin": 6,
+                "mean_predicted": 0.159,
+                "observed": 0.1826,
+                "n": 1024
+              },
+              {
+                "bin": 7,
+                "mean_predicted": 0.1908,
+                "observed": 0.2266,
+                "n": 1024
+              },
+              {
+                "bin": 8,
+                "mean_predicted": 0.2331,
+                "observed": 0.2451,
+                "n": 1024
+              },
+              {
+                "bin": 9,
+                "mean_predicted": 0.3183,
+                "observed": 0.3054,
+                "n": 1025
+              }
+            ],
+            "calibration_fit": {
+              "intercept": 0.1315,
+              "slope": 0.8972
+            }
+          },
+          "recent": {
+            "n": 19596,
+            "positives": 3658,
+            "base_rate": 0.1867,
+            "roc_auc": 0.7029,
+            "pr_auc": 0.3038,
+            "precision_top_10pct": 0.3423,
+            "brier": 0.1444
+          }
+        },
+        "lightgbm_no_text": {
+          "test": {
+            "n": 10242,
+            "positives": 1513,
+            "base_rate": 0.1477,
+            "roc_auc": 0.6893,
+            "pr_auc": 0.2496,
+            "precision_top_10pct": 0.293,
+            "brier": 0.1195
+          },
+          "recent": {
+            "n": 19596,
+            "positives": 3658,
+            "base_rate": 0.1867,
+            "roc_auc": 0.6917,
+            "pr_auc": 0.2947,
+            "precision_top_10pct": 0.3209,
+            "brier": 0.1451
+          }
+        },
+        "lightgbm_no_faers": {
+          "test": {
+            "n": 10242,
+            "positives": 1513,
+            "base_rate": 0.1477,
+            "roc_auc": 0.7041,
+            "pr_auc": 0.2622,
+            "precision_top_10pct": 0.2959,
+            "brier": 0.1184
+          },
+          "recent": {
+            "n": 19596,
+            "positives": 3658,
+            "base_rate": 0.1867,
+            "roc_auc": 0.703,
+            "pr_auc": 0.3034,
+            "precision_top_10pct": 0.3357,
+            "brier": 0.1443
+          }
+        },
+        "lightgbm_no_burden": {
+          "test": {
+            "n": 10242,
+            "positives": 1513,
+            "base_rate": 0.1477,
+            "roc_auc": 0.7056,
+            "pr_auc": 0.2682,
+            "precision_top_10pct": 0.3125,
+            "brier": 0.118
+          },
+          "recent": {
+            "n": 19596,
+            "positives": 3658,
+            "base_rate": 0.1867,
+            "roc_auc": 0.7031,
+            "pr_auc": 0.3055,
+            "precision_top_10pct": 0.3332,
+            "brier": 0.1443
+          }
+        },
+        "lightgbm_stable_only": {
+          "test": {
+            "n": 10242,
+            "positives": 1513,
+            "base_rate": 0.1477,
+            "roc_auc": 0.6823,
+            "pr_auc": 0.243,
+            "precision_top_10pct": 0.2812,
+            "brier": 0.1201
+          },
+          "recent": {
+            "n": 19596,
+            "positives": 3658,
+            "base_rate": 0.1867,
+            "roc_auc": 0.6889,
+            "pr_auc": 0.2944,
+            "precision_top_10pct": 0.326,
+            "brier": 0.145
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "n": 36286,
+          "base_rate": 0.1393
+        },
+        "test": {
+          "n": 10242,
+          "base_rate": 0.1477
+        },
+        "recent": {
+          "n": 19596,
+          "base_rate": 0.1867
+        }
+      },
+      "by_sponsor_class": {
+        "GOVERNMENT": {
+          "n": 357,
+          "positives": 52,
+          "roc_auc": 0.6747
+        },
+        "INDUSTRY": {
+          "n": 5797,
+          "positives": 727,
+          "roc_auc": 0.7342
+        },
+        "OTHER": {
+          "n": 4088,
+          "positives": 734,
+          "roc_auc": 0.6524
+        }
+      },
+      "by_phase": {
+        "PHASE1": {
+          "n": 3338,
+          "positives": 400,
+          "roc_auc": 0.7386
+        },
+        "PHASE1/PHASE2": {
+          "n": 849,
+          "positives": 180,
+          "roc_auc": 0.6692
+        },
+        "PHASE2": {
+          "n": 3404,
+          "positives": 609,
+          "roc_auc": 0.6701
+        },
+        "PHASE2/PHASE3": {
+          "n": 370,
+          "positives": 51,
+          "roc_auc": 0.693
+        },
+        "PHASE3": {
+          "n": 2281,
+          "positives": 273,
+          "roc_auc": 0.6867
+        }
+      },
+      "by_start_year": {
+        "2015": {
+          "n": 5247,
+          "positives": 795,
+          "roc_auc": 0.6936
+        },
+        "2016": {
+          "n": 4995,
+          "positives": 718,
+          "roc_auc": 0.714
+        }
+      },
+      "rolling_origin": [
+        {
+          "test_years": "2012-2013",
+          "train_n": 20920,
+          "n": 10069,
+          "positives": 1380,
+          "roc_auc": 0.7194,
+          "calibration_fit": {
+            "intercept": -0.0024,
+            "slope": 0.9316
+          }
+        },
+        {
+          "test_years": "2013-2014",
+          "train_n": 25965,
+          "n": 10321,
+          "positives": 1394,
+          "roc_auc": 0.7279,
+          "calibration_fit": {
+            "intercept": 0.0079,
+            "slope": 1.001
+          }
+        },
+        {
+          "test_years": "2014-2015",
+          "train_n": 30989,
+          "n": 10544,
+          "positives": 1512,
+          "roc_auc": 0.7008,
+          "calibration_fit": {
+            "intercept": 0.1173,
+            "slope": 0.8678
+          }
+        },
+        {
+          "test_years": "2015-2016",
+          "train_n": 36286,
+          "n": 10242,
+          "positives": 1513,
+          "roc_auc": 0.7033,
+          "calibration_fit": {
+            "intercept": 0.1315,
+            "slope": 0.8972
+          }
+        }
+      ]
+    },
+    "label_enrollment": {
+      "description": "terminated for enrollment",
+      "params": {
+        "n_estimators": 110,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "random_state": 0,
+        "verbose": -1,
+        "metric": "auc",
+        "num_leaves": 63,
+        "learning_rate": 0.03,
+        "min_child_samples": 200
+      },
+      "grid": [
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 443,
+          "val_auc": 0.7974
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 464,
+          "val_auc": 0.7972
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 94,
+          "val_auc": 0.7883
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 175,
+          "val_auc": 0.7922
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 146,
+          "val_auc": 0.7959
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 245,
+          "val_auc": 0.7976
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 140,
+          "val_auc": 0.7953
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 69,
+          "val_auc": 0.7864
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 189,
+          "val_auc": 0.798
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 110,
+          "val_auc": 0.7997
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 113,
+          "val_auc": 0.7955
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 86,
+          "val_auc": 0.7924
+        }
+      ],
+      "models": {
+        "logistic_regression": {
+          "test": {
+            "n": 9200,
+            "positives": 471,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7562,
+            "pr_auc": 0.1467,
+            "precision_top_10pct": 0.1685,
+            "brier": 0.0462
+          },
+          "recent": {
+            "n": 17036,
+            "positives": 1098,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7364,
+            "pr_auc": 0.142,
+            "precision_top_10pct": 0.1684,
+            "brier": 0.0582
+          }
+        },
+        "lightgbm": {
+          "test": {
+            "n": 9200,
+            "positives": 471,
+            "base_rate": 0.0512,
+            "roc_auc": 0.783,
+            "pr_auc": 0.1485,
+            "precision_top_10pct": 0.1685,
+            "brier": 0.0459,
+            "roc_auc_ci95": [
+              0.7627,
+              0.8024
+            ],
+            "calibration": [
+              {
+                "bin": 0,
+                "mean_predicted": 0.0035,
+                "observed": 0.0022,
+                "n": 920
+              },
+              {
+                "bin": 1,
+                "mean_predicted": 0.0056,
+                "observed": 0.0065,
+                "n": 920
+              },
+              {
+                "bin": 2,
+                "mean_predicted": 0.0104,
+                "observed": 0.012,
+                "n": 920
+              },
+              {
+                "bin": 3,
+                "mean_predicted": 0.0158,
+                "observed": 0.013,
+                "n": 920
+              },
+              {
+                "bin": 4,
+                "mean_predicted": 0.0226,
+                "observed": 0.0326,
+                "n": 920
+              },
+              {
+                "bin": 5,
+                "mean_predicted": 0.0319,
+                "observed": 0.0304,
+                "n": 920
+              },
+              {
+                "bin": 6,
+                "mean_predicted": 0.0461,
+                "observed": 0.0467,
+                "n": 920
+              },
+              {
+                "bin": 7,
+                "mean_predicted": 0.0668,
+                "observed": 0.0837,
+                "n": 920
+              },
+              {
+                "bin": 8,
+                "mean_predicted": 0.0956,
+                "observed": 0.1163,
+                "n": 920
+              },
+              {
+                "bin": 9,
+                "mean_predicted": 0.1624,
+                "observed": 0.1685,
+                "n": 920
+              }
+            ],
+            "calibration_fit": {
+              "intercept": 0.1181,
+              "slope": 0.9855
+            }
+          },
+          "recent": {
+            "n": 17036,
+            "positives": 1098,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7659,
+            "pr_auc": 0.153,
+            "precision_top_10pct": 0.1614,
+            "brier": 0.0577
+          }
+        },
+        "lightgbm_no_text": {
+          "test": {
+            "n": 9200,
+            "positives": 471,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7688,
+            "pr_auc": 0.1348,
+            "precision_top_10pct": 0.1576,
+            "brier": 0.0463
+          },
+          "recent": {
+            "n": 17036,
+            "positives": 1098,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7465,
+            "pr_auc": 0.1403,
+            "precision_top_10pct": 0.1631,
+            "brier": 0.0581
+          }
+        },
+        "lightgbm_no_faers": {
+          "test": {
+            "n": 9200,
+            "positives": 471,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7817,
+            "pr_auc": 0.1553,
+            "precision_top_10pct": 0.1685,
+            "brier": 0.0458
+          },
+          "recent": {
+            "n": 17036,
+            "positives": 1098,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7625,
+            "pr_auc": 0.1457,
+            "precision_top_10pct": 0.1678,
+            "brier": 0.058
+          }
+        },
+        "lightgbm_no_burden": {
+          "test": {
+            "n": 9200,
+            "positives": 471,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7795,
+            "pr_auc": 0.149,
+            "precision_top_10pct": 0.162,
+            "brier": 0.0459
+          },
+          "recent": {
+            "n": 17036,
+            "positives": 1098,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7623,
+            "pr_auc": 0.152,
+            "precision_top_10pct": 0.1743,
+            "brier": 0.0579
+          }
+        },
+        "lightgbm_stable_only": {
+          "test": {
+            "n": 9200,
+            "positives": 471,
+            "base_rate": 0.0512,
+            "roc_auc": 0.7643,
+            "pr_auc": 0.1319,
+            "precision_top_10pct": 0.1446,
+            "brier": 0.0465
+          },
+          "recent": {
+            "n": 17036,
+            "positives": 1098,
+            "base_rate": 0.0645,
+            "roc_auc": 0.7484,
+            "pr_auc": 0.1427,
+            "precision_top_10pct": 0.1643,
+            "brier": 0.058
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "n": 32838,
+          "base_rate": 0.0489
+        },
+        "test": {
+          "n": 9200,
+          "base_rate": 0.0512
+        },
+        "recent": {
+          "n": 17036,
+          "base_rate": 0.0645
+        }
+      },
+      "by_sponsor_class": {
+        "GOVERNMENT": {
+          "n": 319,
+          "positives": 14,
+          "roc_auc": 0.7628
+        },
+        "INDUSTRY": {
+          "n": 5184,
+          "positives": 114,
+          "roc_auc": 0.7551
+        },
+        "OTHER": {
+          "n": 3697,
+          "positives": 343,
+          "roc_auc": 0.6977
+        }
+      },
+      "by_phase": {
+        "PHASE1": {
+          "n": 3035,
+          "positives": 97,
+          "roc_auc": 0.8347
+        },
+        "PHASE1/PHASE2": {
+          "n": 711,
+          "positives": 42,
+          "roc_auc": 0.7159
+        },
+        "PHASE2": {
+          "n": 3027,
+          "positives": 232,
+          "roc_auc": 0.7487
+        },
+        "PHASE2/PHASE3": {
+          "n": 334,
+          "positives": 15,
+          "roc_auc": 0.6817
+        },
+        "PHASE3": {
+          "n": 2093,
+          "positives": 85,
+          "roc_auc": 0.752
+        }
+      },
+      "by_start_year": {
+        "2015": {
+          "n": 4701,
+          "positives": 249,
+          "roc_auc": 0.7843
+        },
+        "2016": {
+          "n": 4499,
+          "positives": 222,
+          "roc_auc": 0.7818
+        }
+      }
+    },
+    "label_safety": {
+      "description": "terminated for safety",
+      "params": {
+        "n_estimators": 83,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "random_state": 0,
+        "verbose": -1,
+        "metric": "auc",
+        "num_leaves": 63,
+        "learning_rate": 0.06,
+        "min_child_samples": 200
+      },
+      "grid": [
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 131,
+          "val_auc": 0.6751
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 198,
+          "val_auc": 0.6906
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 54,
+          "val_auc": 0.6718
+        },
+        {
+          "num_leaves": 15,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 91,
+          "val_auc": 0.7032
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 195,
+          "val_auc": 0.7007
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 142,
+          "val_auc": 0.7049
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 70,
+          "val_auc": 0.6774
+        },
+        {
+          "num_leaves": 31,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 63,
+          "val_auc": 0.7153
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 50,
+          "n_estimators": 108,
+          "val_auc": 0.6899
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "n_estimators": 99,
+          "val_auc": 0.7008
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 50,
+          "n_estimators": 64,
+          "val_auc": 0.6818
+        },
+        {
+          "num_leaves": 63,
+          "learning_rate": 0.06,
+          "min_child_samples": 200,
+          "n_estimators": 83,
+          "val_auc": 0.7256
+        }
+      ],
+      "models": {
+        "logistic_regression": {
+          "test": {
+            "n": 8816,
+            "positives": 87,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6792,
+            "pr_auc": 0.0196,
+            "precision_top_10pct": 0.0215,
+            "brier": 0.01
+          },
+          "recent": {
+            "n": 16175,
+            "positives": 237,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6803,
+            "pr_auc": 0.028,
+            "precision_top_10pct": 0.0328,
+            "brier": 0.0144
+          }
+        },
+        "lightgbm": {
+          "test": {
+            "n": 8816,
+            "positives": 87,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6703,
+            "pr_auc": 0.0189,
+            "precision_top_10pct": 0.0249,
+            "brier": 0.0098,
+            "roc_auc_ci95": [
+              0.6069,
+              0.7238
+            ],
+            "calibration": [
+              {
+                "bin": 0,
+                "mean_predicted": 0.0003,
+                "observed": 0.0034,
+                "n": 882
+              },
+              {
+                "bin": 1,
+                "mean_predicted": 0.0006,
+                "observed": 0.0045,
+                "n": 882
+              },
+              {
+                "bin": 2,
+                "mean_predicted": 0.0008,
+                "observed": 0.0045,
+                "n": 881
+              },
+              {
+                "bin": 3,
+                "mean_predicted": 0.001,
+                "observed": 0.0079,
+                "n": 882
+              },
+              {
+                "bin": 4,
+                "mean_predicted": 0.0014,
+                "observed": 0.0057,
+                "n": 881
+              },
+              {
+                "bin": 5,
+                "mean_predicted": 0.0018,
+                "observed": 0.0079,
+                "n": 882
+              },
+              {
+                "bin": 6,
+                "mean_predicted": 0.0025,
+                "observed": 0.0114,
+                "n": 881
+              },
+              {
+                "bin": 7,
+                "mean_predicted": 0.0035,
+                "observed": 0.0113,
+                "n": 882
+              },
+              {
+                "bin": 8,
+                "mean_predicted": 0.0054,
+                "observed": 0.017,
+                "n": 881
+              },
+              {
+                "bin": 9,
+                "mean_predicted": 0.0152,
+                "observed": 0.0249,
+                "n": 882
+              }
+            ],
+            "calibration_fit": {
+              "intercept": 1.1377,
+              "slope": 0.5073
+            }
+          },
+          "recent": {
+            "n": 16175,
+            "positives": 237,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6452,
+            "pr_auc": 0.0249,
+            "precision_top_10pct": 0.0334,
+            "brier": 0.0145
+          }
+        },
+        "lightgbm_no_text": {
+          "test": {
+            "n": 8816,
+            "positives": 87,
+            "base_rate": 0.0099,
+            "roc_auc": 0.604,
+            "pr_auc": 0.0173,
+            "precision_top_10pct": 0.017,
+            "brier": 0.0099
+          },
+          "recent": {
+            "n": 16175,
+            "positives": 237,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6539,
+            "pr_auc": 0.0248,
+            "precision_top_10pct": 0.0272,
+            "brier": 0.0145
+          }
+        },
+        "lightgbm_no_faers": {
+          "test": {
+            "n": 8816,
+            "positives": 87,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6587,
+            "pr_auc": 0.0227,
+            "precision_top_10pct": 0.0261,
+            "brier": 0.0098
+          },
+          "recent": {
+            "n": 16175,
+            "positives": 237,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6528,
+            "pr_auc": 0.0256,
+            "precision_top_10pct": 0.029,
+            "brier": 0.0145
+          }
+        },
+        "lightgbm_no_burden": {
+          "test": {
+            "n": 8816,
+            "positives": 87,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6684,
+            "pr_auc": 0.0217,
+            "precision_top_10pct": 0.0272,
+            "brier": 0.0098
+          },
+          "recent": {
+            "n": 16175,
+            "positives": 237,
+            "base_rate": 0.0147,
+            "roc_auc": 0.6476,
+            "pr_auc": 0.025,
+            "precision_top_10pct": 0.0303,
+            "brier": 0.0145
+          }
+        },
+        "lightgbm_stable_only": {
+          "test": {
+            "n": 8816,
+            "positives": 87,
+            "base_rate": 0.0099,
+            "roc_auc": 0.6092,
+            "pr_auc": 0.0165,
+            "precision_top_10pct": 0.017,
+            "brier": 0.0099
+          },
+          "recent": {
+            "n": 16175,
+            "positives": 237,
+            "base_rate": 0.0147,
+            "roc_auc": 0.641,
+            "pr_auc": 0.0254,
+            "precision_top_10pct": 0.0303,
+            "brier": 0.0145
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "n": 31536,
+          "base_rate": 0.0096
+        },
+        "test": {
+          "n": 8816,
+          "base_rate": 0.0099
+        },
+        "recent": {
+          "n": 16175,
+          "base_rate": 0.0147
+        }
+      },
+      "by_sponsor_class": {
+        "GOVERNMENT": {
+          "n": 308,
+          "positives": 3,
+          "roc_auc": 0.5126
+        },
+        "INDUSTRY": {
+          "n": 5124,
+          "positives": 54,
+          "roc_auc": 0.6927
+        },
+        "OTHER": {
+          "n": 3384,
+          "positives": 30,
+          "roc_auc": 0.6496
+        }
+      },
+      "by_phase": {
+        "PHASE1": {
+          "n": 2965,
+          "positives": 27,
+          "roc_auc": 0.7428
+        },
+        "PHASE1/PHASE2": {
+          "n": 678,
+          "positives": 9,
+          "roc_auc": 0.7067
+        },
+        "PHASE2": {
+          "n": 2824,
+          "positives": 29,
+          "roc_auc": 0.6054
+        },
+        "PHASE2/PHASE3": {
+          "n": 321,
+          "positives": 2,
+          "roc_auc": 0.5643
+        },
+        "PHASE3": {
+          "n": 2028,
+          "positives": 20,
+          "roc_auc": 0.6496
+        }
+      },
+      "by_start_year": {
+        "2015": {
+          "n": 4501,
+          "positives": 49,
+          "roc_auc": 0.6349
+        },
+        "2016": {
+          "n": 4315,
+          "positives": 38,
+          "roc_auc": 0.7143
+        }
+      }
+    }
+  },
+  "top_drivers": [
+    {
+      "feature": "registration_text",
+      "mean_abs_contribution": 0.4767,
+      "direction": null
+    },
+    {
+      "feature": "healthy_volunteers",
+      "mean_abs_contribution": 0.214,
+      "direction": {
+        "False": 0.1495,
+        "True": -0.4153,
+        "missing": -0.3697
+      }
+    },
+    {
+      "feature": "sponsor_prior_termination_rate",
+      "mean_abs_contribution": 0.1636,
+      "direction": {
+        "low_third": -0.1951,
+        "high_third": 0.249
+      }
+    },
+    {
+      "feature": "phase",
+      "mean_abs_contribution": 0.0938,
+      "direction": {
+        "PHASE1": -0.1187,
+        "PHASE1/PHASE2": 0.1086,
+        "PHASE2": 0.0952,
+        "PHASE2/PHASE3": 0.012,
+        "PHASE3": -0.0615
+      }
+    },
+    {
+      "feature": "intervention_model",
+      "mean_abs_contribution": 0.0664,
+      "direction": {
+        "CROSSOVER": -0.3191,
+        "FACTORIAL": -0.1968,
+        "PARALLEL": 0.0373,
+        "SEQUENTIAL": -0.0321,
+        "SINGLE_GROUP": 0.043,
+        "missing": 0.0112
+      }
+    },
+    {
+      "feature": "primary_purpose",
+      "mean_abs_contribution": 0.0349,
+      "direction": {
+        "BASIC_SCIENCE": -0.0003,
+        "DEVICE_FEASIBILITY": -0.1344,
+        "DIAGNOSTIC": -0.0582,
+        "HEALTH_SERVICES_RESEARCH": -0.1121,
+        "OTHER": -0.2041,
+        "PREVENTION": -0.0724,
+        "SCREENING": -0.1087,
+        "SUPPORTIVE_CARE": -0.0398,
+        "TREATMENT": 0.0208,
+        "missing": -0.1979
+      }
+    },
+    {
+      "feature": "min_age_years",
+      "mean_abs_contribution": 0.0337,
+      "direction": {
+        "low_third": 0.015,
+        "high_third": 0.001
+      }
+    },
+    {
+      "feature": "has_dmc",
+      "mean_abs_contribution": 0.033,
+      "direction": {
+        "False": -0.0187,
+        "True": 0.043,
+        "missing": -0.0613
+      }
+    },
+    {
+      "feature": "sponsor_trials_started_2y",
+      "mean_abs_contribution": 0.0327,
+      "direction": {
+        "low_third": 0.0258,
+        "high_third": -0.0463
+      }
+    },
+    {
+      "feature": "faers_serious_share",
+      "mean_abs_contribution": 0.0291,
+      "direction": {
+        "low_third": -0.0584,
+        "high_third": 0.0106
+      }
+    },
+    {
+      "feature": "area_neoplasms",
+      "mean_abs_contribution": 0.0269,
+      "direction": {
+        "False": -0.0205,
+        "True": 0.0437
+      }
+    },
+    {
+      "feature": "faers_death_share",
+      "mean_abs_contribution": 0.0256,
+      "direction": {
+        "low_third": -0.0248,
+        "high_third": 0.0338
+      }
+    },
+    {
+      "feature": "masking",
+      "mean_abs_contribution": 0.0213,
+      "direction": {
+        "DOUBLE": 0.0151,
+        "NONE": 0.0038,
+        "QUADRUPLE": -0.0475,
+        "SINGLE": -0.0397,
+        "TRIPLE": 0.0499,
+        "missing": -0.018
+      }
+    },
+    {
+      "feature": "sponsor_class",
+      "mean_abs_contribution": 0.0213,
+      "direction": {
+        "GOVERNMENT": 0.004,
+        "INDUSTRY": -0.017,
+        "OTHER": 0.0283
+      }
+    },
+    {
+      "feature": "sponsor_prior_trials",
+      "mean_abs_contribution": 0.0197,
+      "direction": {
+        "low_third": -0.0086,
+        "high_third": 0.015
+      }
+    }
+  ]
+}

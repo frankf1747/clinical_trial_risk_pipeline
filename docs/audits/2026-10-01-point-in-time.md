@@ -82,3 +82,16 @@ The plan's rule (Task 7 Step 5):
 The drop is under 0.01 on both subsets, but four fields exceed the 5-point gap and together account for the whole drop, so this is **outcome 2**. Archives start in 2017, so those fields cannot be rebuilt as of start for the 2008–2016 training and test years; v4 should drop them. Expect a small cost on the 2015–2016 headline (the stable-only model, which also drops text and four more fields, scores 0.686 vs 0.714) and re-run this audit on v4. Outcome 3 is ruled out: the drop is small and narrow, not broad.
 
 What v3's report can say meanwhile: post-start edits inflate its AUC by about 0.005 on 2017–2020 starts (at most about 0.01 on records registered before start), through four named fields.
+
+## v4 re-audit (2026-10-02)
+
+v4 is v3 without `criteria_count`, `criteria_chars`, `n_countries` and `us_only` (`POST_START_LEAKS` in `src/ctrisk/ml/features.py`), audited on the same reduced archives (`models/v4/audit_point_in_time.json`).
+
+| Trials | n | Latest-record AUC | Point-in-time AUC | Change (paired 95% CI) |
+|---|---|---|---|---|
+| with an archived record | 18,568 | 0.694 | 0.696 | +0.002 (−0.001 to +0.004) |
+| record predates start | 9,112 | 0.645 | 0.648 | +0.004 (−0.001 to +0.008) |
+
+No remaining field moves the AUC by more than 0.0004 when swapped alone. The remaining change gaps (allocation +3.6, responsible party +2.2, collaborators +1.8 points) are under the 5-point line. By the decision rule v4 is the first outcome: keep it, and state the audit in the README.
+
+The cost: v4's 2015–2016 test AUC is 0.703 (0.690–0.716), vs v3's 0.714. That is more than the 0.005 the audit attributed to leakage, because the four fields also carried real signal. Rolling-origin AUCs are 0.719, 0.728, 0.701, 0.703; calibration slope 0.90, intercept 0.13.
