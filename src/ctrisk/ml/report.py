@@ -82,6 +82,10 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
                   [[f"`{c}`", "categorical" if c in CATEGORICAL else "numeric / flag", _timing(c)] for c in cols]
                   + [["registration text", f"TF-IDF 1–2grams → SVD, {features.get('text_components', 0)} components",
                       "latest record; often edited after start"]])
+    if features.get("excluded"):
+        out += [("Left out because the point-in-time audit found them edited after start: "
+                 + ", ".join(f"`{c}`" for c in features["excluded"])
+                 + " (`docs/audits/2026-10-01-point-in-time.md`)."), ""]
     out += [(f"{sum(c in POINT_IN_TIME for c in cols)} of {len(cols)} tabular predictors are measured as of the "
             "start date (FAERS reports received before the start month; sponsor trials that ended or started "
             "before the start date). The rest come from the latest registry record. Missing values: LightGBM's "

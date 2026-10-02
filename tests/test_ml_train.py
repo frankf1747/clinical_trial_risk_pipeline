@@ -32,7 +32,7 @@ def synthetic(n=5000, seed=0):
 
 @pytest.fixture(scope="module")
 def result():
-    return run(synthetic(), grid=SMALL_GRID, text_min_df=1)
+    return run(synthetic(), grid=SMALL_GRID, text_min_df=1, exclude=())     # n_countries carries the signal
 
 
 def test_every_target_is_trained_and_evaluated(result):
@@ -77,7 +77,7 @@ def test_refuses_a_train_test_or_recent_row_without_a_label():
     frame = synthetic(200)
     frame.loc[frame["split"] == "train", "label"] = np.nan
     with pytest.raises(ValueError, match="without a label"):
-        run(frame, grid=SMALL_GRID, text_min_df=1)
+        run(frame, grid=SMALL_GRID, text_min_df=1, exclude=())
 
 
 def test_reason_targets_count_and_evaluate_only_their_own_rows(result):
@@ -98,7 +98,7 @@ def test_text_is_only_ever_fit_on_training_rows(monkeypatch):
     frame["text"] = frame["nct_id"]                    # each document names its own trial
     seen, original = [], TextFeatures.fit
     monkeypatch.setattr(TextFeatures, "fit", lambda self, texts: seen.append(set(texts)) or original(self, texts))
-    run(frame, grid=SMALL_GRID, text_min_df=1)
+    run(frame, grid=SMALL_GRID, text_min_df=1, exclude=())
     train = frame["split"] == "train"
     assert seen and all(s <= set(frame.loc[train, "nct_id"]) for s in seen)
     inner = train & (frame["start_date"] < "2013-01-01") & frame["label"].notna()
@@ -137,3 +137,12 @@ def test_rolling_origin_trains_only_on_earlier_starts(result):
     assert folds["2012-2013"]["train_n"] < folds["2014-2015"]["train_n"]
     assert all(f["roc_auc"] > 0.85 and set(f["calibration_fit"]) == {"intercept", "slope"} for f in folds.values())
     assert "rolling_origin" not in report["targets"]["label_safety"]      # overall target only
+
+
+def test_fields_the_audit_found_leaking_are_left_out_by_default():
+    """docs/audits/2026-10-01-point-in-time.md: these changed after start more often for terminated trials."""
+    from ctrisk.ml.features import POST_START_LEAKS
+    assert set(POST_START_LEAKS) == {"criteria_count", "criteria_chars", "n_countries", "us_only"}
+    _, report = run(synthetic(1500), grid=SMALL_GRID, text_min_df=1)
+    assert "n_countries" not in report["features"]["columns"]
+    assert report["features"]["excluded"] == ["n_countries"]          # the synthetic frame has only this one

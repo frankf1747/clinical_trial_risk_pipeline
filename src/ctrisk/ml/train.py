@@ -24,7 +24,15 @@ from ctrisk.ml.evaluate import (
     metrics,
     subgroup_auc,
 )
-from ctrisk.ml.features import BURDEN, CATEGORICAL, EDIT_PRONE, FAERS, inputs, to_matrix
+from ctrisk.ml.features import (
+    BURDEN,
+    CATEGORICAL,
+    EDIT_PRONE,
+    FAERS,
+    POST_START_LEAKS,
+    inputs,
+    to_matrix,
+)
 from ctrisk.ml.model import RiskModel, collapse_text
 from ctrisk.ml.text import TextFeatures
 
@@ -160,8 +168,8 @@ def driver_directions(contrib: np.ndarray, names: list[str], frame: pd.DataFrame
     return out
 
 
-def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20):
-    columns = inputs(frame)
+def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20, exclude=tuple(POST_START_LEAKS)):
+    columns = inputs(frame, drop=exclude)
     labeled = frame["split"] != "score"
     if frame.loc[labeled, "label"].isna().any():
         raise ValueError("a train/test/recent row without a label; only score rows may be unlabeled")
@@ -185,7 +193,8 @@ def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20):
     report["top_drivers"] = [{"feature": f, "mean_abs_contribution": round(float(v), 4),
                               "direction": directions[f]}
                              for f, v in importance.sort_values(ascending=False).head(15).items()]
-    report["features"] = {"columns": columns, "categories": main.categories,
+    report["features"] = {"columns": columns, "excluded": [c for c in exclude if c in frame.columns],
+                          "categories": main.categories,
                           "text_components": len(main.text.columns) if main.text else 0}
     return final, report
 

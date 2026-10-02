@@ -16,6 +16,12 @@ BURDEN = ["n_countries", "us_only", "min_age_years", "max_age_years", "healthy_v
 EDIT_PRONE = ["criteria_count", "criteria_chars", "n_countries", "us_only", "n_collaborators", "n_keywords",
               "responsible_party", "has_dmc"]
 
+# The point-in-time audit (docs/audits/2026-10-01-point-in-time.md) found these four changed after start
+# more often for trials that went on to terminate (gaps of 5-10 points), and together they carry the whole
+# measured AUC inflation. Archives start in 2017, so they cannot be rebuilt as of start for the training
+# years; from v4 the model leaves them out.
+POST_START_LEAKS = ["criteria_count", "criteria_chars", "n_countries", "us_only"]
+
 
 def inputs(frame: pd.DataFrame, drop=()) -> list[str]:
     return [c for c in frame.columns if c not in NOT_INPUTS and c not in set(drop)]

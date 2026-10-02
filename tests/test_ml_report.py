@@ -55,3 +55,10 @@ def test_card_says_which_archives_a_partial_audit_used():
     assert "3 AACT archives dated 2017-01-03 to 2017-12-14" in text
     assert "Partial: archives cover only part of 2017–2020" in text
     assert "disease areas kept from the latest record for 100.0% of trials" in text
+
+
+def test_card_lists_predictors_left_out_after_the_audit():
+    metrics, manifest, features = load()
+    features = {**features, "excluded": ["n_countries", "us_only"]}
+    text = card(metrics, manifest, features)
+    assert "Left out because the point-in-time audit found them edited after start: `n_countries`, `us_only`" in text
