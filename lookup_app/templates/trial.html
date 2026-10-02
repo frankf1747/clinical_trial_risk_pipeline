@@ -12,7 +12,7 @@
 </div>
 
 <div class="card">
-  <div class="rank">Riskier than {{ "%.0f"|format(t.risk_percentile) }}% of active trials</div>
+  <div class="rank">{% if t.risk_percentile >= 99 %}Among the riskiest 1% of active trials{% else %}Riskier than {{ "%.0f"|format(t.risk_percentile) }}% of active trials{% endif %}</div>
   <div class="bar" aria-hidden="true"><span style="width: {{ t.risk_percentile }}%"></span></div>
   <p class="small muted" style="margin:6px 0 0">Model score {{ "%.0f"|format(t.risk_score * 100) }}% for any early termination,
   {{ "%.0f"|format(t.enrollment_risk_score * 100) }}% for termination due to slow enrollment. About 15% of comparable trials terminate.</p>

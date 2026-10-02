@@ -57,7 +57,7 @@ class Store:
 
 def _fetch(source: str) -> Path:
     """Download current.json and the file it names from gs://bucket/prefix into a temp folder."""
-    from google.cloud import storage                       # only needed on Cloud Run
+    from google.cloud import storage  # only needed on Cloud Run
 
     bucket_name, _, prefix = source.removeprefix("gs://").partition("/")
     bucket = storage.Client().bucket(bucket_name)
@@ -121,6 +121,6 @@ def api_trial(nct_id: str):
     return {**row, "model_version": row.get("model_version")}
 
 
-@app.get("/healthz")
+@app.get("/health")                 # not /healthz: Cloud Run reserves paths ending in z
 def health():
     return {"status": "ok", "trials": len(STORE.trials), "model_version": STORE.summary.get("model_version")}

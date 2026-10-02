@@ -13,6 +13,8 @@ from ctrisk.serving.labels import reason_text, value_text
     ("sponsor_prior_trials", 12.0, "Sponsor's past trials: 12"),
     ("intervention_model", "SINGLE_GROUP", "Design: single group"),
     ("masking", None, "Blinding: not given"),
+    ("sponsor_prior_termination_rate", None, "Sponsor's past termination rate: no earlier finished trials"),
+    ("faers_death_share", None, "Drug's FAERS reports with a death: no FAERS history"),
     ("max_age_years", math.nan, "Maximum age: not given"),
     ("area_neoplasms", True, "Disease area, cancer: Yes"),
     ("faers_death_share", 0.0417, "Drug's FAERS reports with a death: 4.2%"),

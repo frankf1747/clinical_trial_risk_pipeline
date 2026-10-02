@@ -39,7 +39,7 @@ def client(tmp_path_factory):
 def test_trial_page_shows_score_rank_and_plain_reasons(client):
     r = client.get("/trial/NCT03801083")
     assert r.status_code == 200
-    assert "Drug A in PAH" in r.text and "97" in r.text
+    assert "Drug A in PAH" in r.text and "Riskier than 98% of active trials" in r.text
     assert "Accepts healthy volunteers: No" in r.text and "raises risk" in r.text
     assert "not causes" in r.text
 
@@ -54,6 +54,13 @@ def test_finished_trials_say_how_they_were_scored(client):
     assert "trained without" in client.get("/trial/NCT00000001").text
 
 
+def test_the_top_percentile_never_claims_100_percent(client):
+    main.STORE.trials.loc["NCT03801083", "risk_percentile"] = 100.0
+    text = client.get("/trial/NCT03801083").text
+    main.STORE.trials.loc["NCT03801083", "risk_percentile"] = 97.5
+    assert "riskiest 1%" in text and "Riskier than 100%" not in text
+
+
 def test_unknown_trial_is_a_helpful_404(client):
     r = client.get("/trial/NCT99999999")
     assert r.status_code == 404 and "Phase 1" in r.text
@@ -63,7 +70,7 @@ def test_json_api_and_health(client):
     body = client.get("/api/trials/NCT03801083").json()
     assert body["risk_percentile"] == 97.5 and body["reasons"][0]["contribution"] == 0.19
     assert client.get("/api/trials/NCT99999999").status_code == 404
-    assert client.get("/healthz").json() == {"status": "ok", "trials": 2, "model_version": "v4"}
+    assert client.get("/health").json() == {"status": "ok", "trials": 2, "model_version": "v4"}
 
 
 def test_home_page_states_the_validated_numbers(client):

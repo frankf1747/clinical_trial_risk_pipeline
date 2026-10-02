@@ -50,6 +50,9 @@ LABELS = {
 }
 TEXT = "Wording of the registration (title, summary, criteria)"
 SPONSORS = {"INDUSTRY": "industry", "OTHER": "academic or other", "GOVERNMENT": "government"}
+# What a missing value means for features that are empty by construction rather than unreported
+MISSING = {"sponsor_prior_termination_rate": "no earlier finished trials",
+           "faers_serious_share": "no FAERS history", "faers_death_share": "no FAERS history"}
 
 
 def _missing(value) -> bool:
@@ -76,7 +79,8 @@ def value_text(feature: str, value) -> str:
     if feature == "registration_text":
         return TEXT
     label, kind = LABELS.get(feature, (feature.replace("_", " ").capitalize(), "category"))
-    return f"{label}: {_shown(kind, value)}"
+    shown = MISSING[feature] if feature in MISSING and _missing(value) else _shown(kind, value)
+    return f"{label}: {shown}"
 
 
 def reason_text(feature: str, value, contribution: float) -> str:
