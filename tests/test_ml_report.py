@@ -52,6 +52,6 @@ def test_card_says_which_archives_a_partial_audit_used():
              "swap_one_column": {}, "unseen_levels": {}, "archives": ["2017-01-03", "2017-06-08", "2017-12-14"],
              "areas_from_latest": {"area_neoplasms": 1.0}}
     text = card(metrics, manifest, features, audit)
-    assert "3 monthly AACT archives, 2017-01-03 to 2017-12-14" in text
+    assert "3 AACT archives dated 2017-01-03 to 2017-12-14" in text
     assert "Partial: archives cover only part of 2017–2020" in text
     assert "disease areas kept from the latest record for 100.0% of trials" in text

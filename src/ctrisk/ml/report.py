@@ -143,7 +143,7 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
         archives = audit.get("archives") or []
         line = f"{audit['n_matched']:,} of {audit['n_cohort']:,} trials had an archived record"
         if archives:
-            line += f", drawn from {len(archives)} monthly AACT archives, {archives[0]} to {archives[-1]}"
+            line += f", drawn from {len(archives)} AACT archives dated {archives[0]} to {archives[-1]}"
         out += [line + ".", ""]
         if archives and archives[-1] < COHORT_LAST_ARCHIVE:
             out += [(f"**Partial: archives cover only part of 2017–2020.** Trials that started after {archives[-1]} "

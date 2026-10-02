@@ -153,31 +153,29 @@ Test AUC by start year:
 
 ## Point-in-time audit (2017–2020 starts)
 
-5,482 of 19,596 trials had an archived record, drawn from 12 monthly AACT archives, 2017-01-03 to 2017-12-14.
-
-**Partial: archives cover only part of 2017–2020.** Trials that started after 2017-12-14 are matched to an older record or not at all; the decision waits for the full set.
+18,568 of 19,596 trials had an archived record, drawn from 25 AACT archives dated 2017-01-03 to 2020-12-30.
 
 Archives without MeSH ancestors cannot say a trial's top-level disease area; disease areas kept from the latest record for 100.0% of trials.
 
 | Trials | n | Latest-record AUC | Point-in-time AUC | Drop (95% CI) |
 |---|---|---|---|---|
-| with an archived record | 5,482 | 0.676 | 0.668 | +0.008 (+0.002 to +0.015) |
-| record predates start | 3,788 | 0.644 | 0.638 | +0.007 (-0.002 to +0.016) |
+| with an archived record | 18,568 | 0.704 | 0.699 | +0.005 (+0.002 to +0.009) |
+| record predates start | 9,112 | 0.655 | 0.649 | +0.006 (+0.001 to +0.012) |
 
 Fields whose values changed most unevenly between start and now (terminated minus completed):
 
 | Field | Changed, terminated | Changed, completed | AUC drop if only this is point-in-time |
 |---|---|---|---|
-| `criteria_count` | 54.5% | 46.4% | +0.000 |
-| `n_keywords` | 12.2% | 8.1% | +0.000 |
-| `criteria_chars` | 88.8% | 85.0% | +0.000 |
-| `n_countries` | 41.3% | 38.0% | +0.002 |
-| `us_only` | 17.3% | 14.0% | +0.006 |
-| `phase` | 8.0% | 5.4% | +0.001 |
-| `responsible_party` | 7.6% | 5.0% | +0.001 |
-| `number_of_arms` | 13.6% | 11.6% | +0.000 |
+| `criteria_count` | 52.8% | 42.9% | +0.000 |
+| `n_countries` | 39.8% | 32.9% | +0.002 |
+| `criteria_chars` | 89.1% | 82.7% | -0.000 |
+| `us_only` | 16.4% | 11.3% | +0.004 |
+| `number_of_arms` | 15.2% | 10.9% | +0.000 |
+| `allocation` | 8.9% | 5.3% | -0.000 |
+| `n_keywords` | 10.1% | 6.6% | +0.000 |
+| `responsible_party` | 5.2% | 3.0% | +0.000 |
 
-Archived categories the model never saw (format drift, or a record edited from outside the modelled population, e.g. phase N/A to Phase 2): {'phase': 0.0223, 'primary_purpose': 0.0004}
+Archived categories the model never saw (format drift, or a record edited from outside the modelled population, e.g. phase N/A to Phase 2): {'phase': 0.012, 'primary_purpose': 0.0003}
 
 ## Prospective backtest
 
