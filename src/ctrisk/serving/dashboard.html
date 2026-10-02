@@ -90,7 +90,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   <header>
     <span class="eyebrow">ClinicalTrials.gov · FDA FAERS · model <span id="version"></span></span>
     <h1>Which drug trials are likely to stop early?</h1>
-    <p class="lede">A termination-risk ranking for every active Phase 1–3 drug trial. Trained on trials that began 2008–2014 and tested on 2015–2016 trials whose outcomes are known. Preliminary: sponsor and FAERS features use only what was known at each start date, but registry features come from the latest version of each record, which can include edits made after the trial started. A point-in-time audit is under way.</p>
+    <p class="lede">A termination-risk ranking for every active Phase 1–3 drug trial. Trained on trials that began 2008–2014 and tested on 2015–2016 trials whose outcomes are known. Sponsor and FAERS features use only what was known at each start date; registry features come from the latest version of each record. A point-in-time audit on 2017–2020 starts measures how much later edits move the results (see the model card).</p>
     <div class="meta" id="meta"></div>
   </header>
 
@@ -164,7 +164,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     </div>
     <div>
       <h3>What the score does not know</h3>
-      <p>The full validation report is <a href="../model_card.md">docs/model_card.md</a>. Registry features describe the latest version of each record, not the one at the start date, so the scores and held-out numbers may be inflated by later edits. Planned enrollment and site counts are left out because the current record already reflects the outcome. Stop reasons come from free text. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence. Contributors show what moved a score, not why a trial would stop.</p>
+      <p>The full validation report is <a href="../model_card.md">docs/model_card.md</a>. Registry features describe the latest version of each record, not the one at the start date; the model card's point-in-time audit measures the effect, and fields found edited after start are left out of the model. Planned enrollment and site counts are left out because the current record already reflects the outcome. Stop reasons come from free text. FAERS features are a historical reporting signal, not a measure of drug safety: FAERS has duplicate and incomplete reports and cannot establish causation or incidence. Contributors show what moved a score, not why a trial would stop.</p>
     </div>
   </section>
 </div>

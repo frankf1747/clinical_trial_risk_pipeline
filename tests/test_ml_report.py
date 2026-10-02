@@ -62,3 +62,16 @@ def test_card_lists_predictors_left_out_after_the_audit():
     features = {**features, "excluded": ["n_countries", "us_only"]}
     text = card(metrics, manifest, features)
     assert "Left out because the point-in-time audit found them edited after start: `n_countries`, `us_only`" in text
+
+
+def test_status_reports_a_complete_audit_instead_of_calling_the_model_preliminary():
+    metrics, manifest, features = load()
+    r = {"n": 18568, "latest": {"roc_auc": 0.694}, "point_in_time": {"roc_auc": 0.696}, "auc_drop": -0.0017,
+         "auc_drop_ci95": [-0.0044, 0.0009]}
+    audit = {"n_cohort": 19596, "n_matched": 18568, "matched": r, "strict": r, "change_rates": {},
+             "swap_one_column": {}, "unseen_levels": {}, "archives": ["2017-01-03", "2020-12-30"]}
+    text = card(metrics, manifest, features, audit)
+    assert "**Audited on 2017–2020 starts.**" in text and "Preliminary" not in text
+    assert "changes AUC by +0.002 (95% CI -0.001 to +0.004) on 18,568 trials" in text
+    partial = {**audit, "archives": ["2017-01-03", "2017-12-14"]}
+    assert "**Preliminary.**" in card(metrics, manifest, features, partial)
