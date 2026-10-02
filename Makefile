@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
+.PHONY: lookup publish upload-raw deploy setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
 	dashboard audit-build audit backtest report m6
 
 setup:
@@ -16,23 +16,27 @@ ingest-aact:
 ingest-faers:
 	uv run python -m ctrisk.ingest.faers
 
+# Spark jobs run locally by default; `make <job> MODE=cloud` submits the same module to Dataproc Serverless
+# (data in gs://$GCP_BUCKET, see scripts/gcp_setup.sh). Add DRY_RUN=1 to print the command and cost only.
+SPARK = $(if $(filter cloud,$(MODE)),uv run python -m ctrisk.cloud.dataproc $(if $(DRY_RUN),--dry-run),uv run python -m)
+
 trials:
-	uv run python -m ctrisk.spark.clean_trials
+	$(SPARK) ctrisk.spark.clean_trials
 
 faers:
-	uv run python -m ctrisk.spark.flatten_faers
+	$(SPARK) ctrisk.spark.flatten_faers
 
 match:
-	uv run python -m ctrisk.spark.match_drugs
+	$(SPARK) ctrisk.spark.match_drugs
 
 check-faers:
 	uv run python -m ctrisk.checks.faers_api
 
 attributes:
-	uv run python -m ctrisk.spark.trial_attributes
+	$(SPARK) ctrisk.spark.trial_attributes
 
 text:
-	uv run python -m ctrisk.spark.trial_text
+	$(SPARK) ctrisk.spark.trial_text
 
 # Mirror the Parquet Snowflake loads to GCS (~75 MB). Deleting stale objects matters:
 # Spark part-file names change every run, and leftovers would load twice.
@@ -42,6 +46,12 @@ upload:
 	  --exclude='.*\.crc$$|.*_SUCCESS$$|^drug_interventions/.*' \
 	  data/parquet gs://$(strip $(GCP_BUCKET))/parquet
 
+# Raw inputs for cloud-mode Spark (once, and after a new AACT snapshot): AACT tables and FAERS zips (~18 GB)
+upload-raw:
+	@test -n "$(strip $(GCP_BUCKET))" || (echo "GCP_BUCKET is not set in .env" && exit 1)
+	gcloud storage rsync --recursive data/raw/aact gs://$(strip $(GCP_BUCKET))/raw/aact
+	gcloud storage rsync --recursive data/raw/faers gs://$(strip $(GCP_BUCKET))/raw/faers
+
 warehouse:
 	uv run python -m ctrisk.warehouse.snowflake
 
@@ -50,6 +60,20 @@ train:
 
 score:
 	uv run python -m ctrisk.ml.score
+
+# Every trial in the modelled population scored without seeing its own outcome -> TRIAL_LOOKUP_SCORES
+lookup:
+	uv run python -m ctrisk.ml.lookup
+
+# TRIAL_LOOKUP unloaded by Snowflake to gs://$GCP_BUCKET/serving/, then current.json points the app at it
+publish:
+	uv run python -m ctrisk.serving.publish
+
+# The public lookup on Cloud Run: scales to zero, reads gs://$GCP_BUCKET/serving/ at start (after `make publish`)
+deploy:
+	gcloud run deploy ctrisk-lookup --source lookup_app --region $(or $(strip $(GCP_REGION)),us-central1) \
+	  --allow-unauthenticated --set-env-vars LOOKUP_SOURCE=gs://$(strip $(GCP_BUCKET))/serving \
+	  --memory 1Gi --cpu 1 --min-instances 0 --max-instances 2
 
 # Serving views in Snowflake + docs/dashboard/index.html (after `make score`)
 dashboard:

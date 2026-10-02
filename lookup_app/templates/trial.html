@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ t.nct_id }}: termination risk{% endblock %}
+{% block body %}
+<p class="small"><a href="/">← Look up another trial</a></p>
+<h1>{{ t.brief_title or t.nct_id }}</h1>
+<div class="meta muted small">
+  <a href="https://clinicaltrials.gov/study/{{ t.nct_id }}">{{ t.nct_id }}</a>
+  <span>Phase {{ phases.get(t.phase, t.phase) }}</span>
+  <span>{{ t.sponsor_name or "" }}{% if t.sponsor_class %} ({{ sponsors.get(t.sponsor_class, t.sponsor_class)|lower }}){% endif %}</span>
+  {% if t.start_date %}<span>Started {{ t.start_date }}</span>{% endif %}
+  <span class="badge">{{ (t.status or "")|replace("_", " ")|lower|capitalize }}</span>
+</div>
+
+<div class="card">
+  <div class="rank">Riskier than {{ "%.0f"|format(t.risk_percentile) }}% of active trials</div>
+  <div class="bar" aria-hidden="true"><span style="width: {{ t.risk_percentile }}%"></span></div>
+  <p class="small muted" style="margin:6px 0 0">Model score {{ "%.0f"|format(t.risk_score * 100) }}% for any early termination,
+  {{ "%.0f"|format(t.enrollment_risk_score * 100) }}% for termination due to slow enrollment. About 15% of comparable trials terminate.</p>
+  <p class="small" style="margin-bottom:0">{{ how }}</p>
+</div>
+
+<h2>What moved the score</h2>
+<div class="card">
+  {% if t.reasons %}
+  <ul class="reasons">
+    {% for r in t.reasons %}
+    <li class="{{ 'up' if r.contribution > 0 else 'down' }}">
+      <span>{{ r.text }}</span>
+      <div class="rbar" style="width: {{ (100 * (r.contribution|abs) / biggest)|round(0) }}%"
+           title="{{ '%+.2f'|format(r.contribution) }} log-odds"></div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">No single feature moved this score much.</p>{% endif %}
+  <p class="small muted" style="margin-bottom:0">Contributions from the model (SHAP, log-odds): what pushed this score up or down,
+  not causes of termination.</p>
+</div>
+{% endblock %}

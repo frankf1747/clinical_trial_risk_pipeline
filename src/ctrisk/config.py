@@ -2,7 +2,11 @@
 import os
 from dataclasses import dataclass
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ImportError:                 # Dataproc Serverless: settings arrive as environment variables
+    def load_dotenv() -> bool:
+        return False
 
 
 @dataclass(frozen=True)

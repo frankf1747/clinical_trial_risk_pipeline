@@ -1,0 +1,71 @@
+"""The public lookup app, on a two-trial fixture (no GCS)."""
+import json
+import sys
+from pathlib import Path
+
+import pandas as pd
+import pytest
+from fastapi.testclient import TestClient
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lookup_app"))
+import main
+
+REASONS = [{"feature": "healthy_volunteers", "text": "Accepts healthy volunteers: No (raises risk)", "contribution": 0.19},
+           {"feature": "phase", "text": "Phase: 1 (lowers risk)", "contribution": -0.12}]
+
+
+@pytest.fixture(scope="module")
+def client(tmp_path_factory):
+    folder = tmp_path_factory.mktemp("serving")
+    pd.DataFrame({
+        "NCT_ID": ["NCT03801083", "NCT00000001"], "BRIEF_TITLE": ["Drug A in PAH", "Old trial"],
+        "PHASE": ["PHASE2", "PHASE1"], "SPONSOR_NAME": ["Acme", "State U"], "SPONSOR_CLASS": ["INDUSTRY", "OTHER"],
+        "STATUS": ["RECRUITING", "COMPLETED"], "START_DATE": pd.to_datetime(["2019-01-01", "2010-03-01"]).date,
+        "MODEL_VERSION": ["v4", "v4"], "SCORE_TYPE": ["forward", "out_of_fold"], "RISK_SCORE": [0.61, 0.08],
+        "RISK_PERCENTILE": [97.5, 20.0], "ENROLLMENT_RISK_SCORE": [0.2, 0.01],
+        "REASONS": [json.dumps(REASONS), "[]"],
+    }).to_parquet(folder / "lookup_v4.parquet")
+    (folder / "current.json").write_text(json.dumps({
+        "model_version": "v4", "lookup_file": "lookup_v4.parquet", "trained_at": "2026-10-02", "git": "abc",
+        "repo_url": "https://github.com/x/y", "published_at": "2026-10-02 10:00 UTC",
+        "test": {"roc_auc": 0.7033, "roc_auc_ci95": [0.6901, 0.7156], "n": 10242, "base_rate": 0.1477,
+                 "precision_top_10pct": 0.3047, "lift_top_10pct": 2.1},
+        "enrollment_auc": 0.783, "trials": {"forward": 1, "out_of_fold": 1}, "left_out": ["us_only"],
+        "audit": {"auc_change": 0.0017, "ci95": [-0.0009, 0.0044], "n": 18568, "archives": 25}}))
+    main.STORE.load(str(folder))
+    return TestClient(main.app)
+
+
+def test_trial_page_shows_score_rank_and_plain_reasons(client):
+    r = client.get("/trial/NCT03801083")
+    assert r.status_code == 200
+    assert "Drug A in PAH" in r.text and "97" in r.text
+    assert "Accepts healthy volunteers: No" in r.text and "raises risk" in r.text
+    assert "not causes" in r.text
+
+
+def test_lookup_accepts_loose_input_and_redirects(client):
+    r = client.get("/trial", params={"nct": " nct03801083 "}, follow_redirects=False)
+    assert r.status_code in (302, 303, 307) and r.headers["location"] == "/trial/NCT03801083"
+    assert client.get("/trial", params={"nct": "03801083"}, follow_redirects=False).headers["location"] == "/trial/NCT03801083"
+
+
+def test_finished_trials_say_how_they_were_scored(client):
+    assert "trained without" in client.get("/trial/NCT00000001").text
+
+
+def test_unknown_trial_is_a_helpful_404(client):
+    r = client.get("/trial/NCT99999999")
+    assert r.status_code == 404 and "Phase 1" in r.text
+
+
+def test_json_api_and_health(client):
+    body = client.get("/api/trials/NCT03801083").json()
+    assert body["risk_percentile"] == 97.5 and body["reasons"][0]["contribution"] == 0.19
+    assert client.get("/api/trials/NCT99999999").status_code == 404
+    assert client.get("/healthz").json() == {"status": "ok", "trials": 2, "model_version": "v4"}
+
+
+def test_home_page_states_the_validated_numbers(client):
+    text = client.get("/").text
+    assert "0.703" in text and "18,568" in text

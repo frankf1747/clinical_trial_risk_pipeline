@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block body %}
+<p class="small"><a href="/">← Back</a></p>
+<h1>{{ nct_id or "That" }} isn't in the lookup</h1>
+<p>The model covers interventional Phase 1–3 drug or biologic trials that started in 2008 or later, and are either
+still running or finished as completed or terminated. Trials outside that group (observational, device, Phase 4,
+withdrawn, unknown status) or registered after the last data snapshot aren't scored.</p>
+<form class="search" action="/trial" method="get">
+  <input name="nct" placeholder="NCT ID" aria-label="NCT ID" value="{{ nct_id }}">
+  <button>Look up</button>
+</form>
+{% endblock %}

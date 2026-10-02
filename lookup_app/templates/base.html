@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Trial termination risk{% endblock %}</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --ink:#1c1c1a; --muted:#6b6b66; --line:#e3e2dc; --accent:#2f5d8a;
+          --up:#b5452f; --down:#2f7d5b; --track:#ecebe6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#151514; --card:#1e1e1c; --ink:#ecebe6; --muted:#a3a29b; --line:#33332f; --accent:#7fa7d1;
+            --up:#e07a62; --down:#5fb98f; --track:#2a2a27; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  a { color: var(--accent); }
+  h1 { font-size: 1.6rem; line-height:1.25; margin: 0 0 8px; }
+  h2 { font-size: 1.05rem; margin: 28px 0 10px; }
+  .muted { color: var(--muted); }
+  .small { font-size: .875rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 16px; }
+  form.search { display:flex; gap:8px; margin-top:16px; }
+  form.search input { flex:1; min-width:0; padding:12px 14px; font-size:1rem; border:1px solid var(--line);
+                      border-radius:10px; background:var(--card); color:var(--ink); }
+  form.search button { padding:12px 18px; font-size:1rem; border:0; border-radius:10px; background:var(--accent);
+                       color:#fff; cursor:pointer; }
+  .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
+  .stat b { display:block; font-size:1.5rem; }
+  .meta { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:6px; }
+  .badge { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
+  .rank { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
+  .bar { height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; margin: 10px 0 4px; }
+  .bar span { display:block; height:100%; background: var(--accent); }
+  ul.reasons { list-style:none; padding:0; margin:0; }
+  ul.reasons li { display:grid; grid-template-columns: 1fr 110px; gap: 12px; align-items:center; padding:8px 0;
+                  border-top:1px solid var(--line); }
+  ul.reasons li:first-child { border-top:0; }
+  .rbar { height:8px; border-radius:4px; }
+  .up .rbar { background: var(--up); } .down .rbar { background: var(--down); }
+  footer { margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+{% block body %}{% endblock %}
+<footer class="muted small">
+  Model {{ s.model_version }}, trained {{ s.trained_at }}, published {{ s.published_at }}.
+  Built from ClinicalTrials.gov (AACT) and FDA FAERS on GCS, Dataproc, Snowflake and Cloud Run.
+  <a href="{{ s.repo_url }}">Code, model card and audit</a>.
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Will this trial be stopped early?</h1>
+<p class="muted">Look up any Phase 1–3 drug trial on ClinicalTrials.gov that started in 2008 or later. You'll see its
+termination-risk score, how it ranks against the trials running now, and what moved the score.</p>
+<form class="search" action="/trial" method="get">
+  <input name="nct" placeholder="NCT ID, e.g. NCT03801083" aria-label="NCT ID" autofocus>
+  <button>Look up</button>
+</form>
+
+<div class="card">
+  <h2 style="margin-top:0">How good is it?</h2>
+  <div class="stats">
+    <div class="stat"><b>{{ "%.3f"|format(s.test.roc_auc) }}</b><span class="muted small">ROC AUC on {{ "{:,}".format(s.test.n) }} trials it never saw
+      (95% CI {{ "%.3f"|format(s.test.roc_auc_ci95[0]) }}–{{ "%.3f"|format(s.test.roc_auc_ci95[1]) }})</span></div>
+    <div class="stat"><b>{{ s.test.lift_top_10pct }}×</b><span class="muted small">termination rate in the top-scored 10%
+      ({{ "%.0f"|format(s.test.precision_top_10pct * 100) }}% vs {{ "%.0f"|format(s.test.base_rate * 100) }}%)</span></div>
+    <div class="stat"><b>{{ "%.3f"|format(s.enrollment_auc) }}</b><span class="muted small">AUC for termination due to slow enrollment</span></div>
+  </div>
+  {% if s.audit %}
+  <p class="small">Checked against leakage: scored with registry records as they stood at each trial's start
+  (from {{ s.audit.archives }} archived snapshots), the AUC changes by {{ "%+.3f"|format(s.audit.auc_change) }}
+  (95% CI {{ "%+.3f"|format(s.audit.ci95[0]) }} to {{ "%+.3f"|format(s.audit.ci95[1]) }}) on {{ "{:,}".format(s.audit.n) }} trials.
+  Fields found edited after start are left out of the model.</p>
+  {% endif %}
+  <p class="small muted">Tested on trials that started in 2015–2016, after training on 2008–2014. The score ranks trials;
+  read it as a percentile, not a promise. Reasons describe the model, not causes of termination.</p>
+</div>
+{% endblock %}
