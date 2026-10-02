@@ -40,4 +40,6 @@ if __name__ == "__main__":
                             *[read_table(spark, aact, t) for t in
                               ("studies", "brief_summaries", "eligibilities", "keywords")])
     text.write.mode("overwrite").parquet(cfg.path("parquet", "trial_text"))
-    print({"trials": text.count(), "median_chars": text.select(F.expr("percentile(length(text), 0.5)")).first()[0]})
+    # Summarize what was written: asking `text` again would rerun the joins and the regex over every summary
+    written = spark.read.parquet(cfg.path("parquet", "trial_text"))
+    print({"trials": written.count(), "median_chars": written.select(F.expr("percentile(length(text), 0.5)")).first()[0]})

@@ -74,7 +74,7 @@ if __name__ == "__main__":
         sys.exit(__doc__)
     module = args[0]
     bucket, region = os.environ["GCP_BUCKET"], os.getenv("GCP_REGION", "us-central1")
-    max_executors = int(os.getenv("DATAPROC_MAX_EXECUTORS", "8"))
+    max_executors = int(os.getenv("DATAPROC_MAX_EXECUTORS", "3"))   # 16 vCPUs: two batches fit a 32-CPU quota
     env = {"MODE": "cloud", "GCP_BUCKET": bucket, **{k: os.environ[k] for k in PASSED_ENV if os.getenv(k)}}
     batch_id = f"ctrisk-{module.rsplit('.', 1)[-1].replace('_', '-')}-{int(time.time())}"
     print(f"{module} on Dataproc Serverless, {region}, up to {max_executors} executors: at most "

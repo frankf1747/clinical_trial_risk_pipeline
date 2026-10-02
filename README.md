@@ -4,30 +4,38 @@ Which drug trials will be stopped early? This pipeline ranks every active Phase 
 
 **In short.** On 10,242 trials that started in 2015–2016, which the model never saw, it ranks a terminated trial above a completed one 70% of the time (ROC AUC **0.703**, 95% CI 0.690–0.716). Its top-scored 10% terminate at 2.1× the base rate (30.5% vs 14.8%). For termination caused by slow enrollment, the AUC is 0.783. Registry records get edited after trials start, which can leak the outcome into the features. A point-in-time audit rebuilt the registry fields from 25 archived snapshots as they stood at each trial's start. It found that four fields leaked, so the current model (v4) leaves them out. Scored with the at-start records, v4's AUC does not drop (change +0.002, 95% CI −0.001 to +0.004, 18,568 trials).
 
+**Try it:** [ctrisk-lookup-420431563670.us-east1.run.app](https://ctrisk-lookup-420431563670.us-east1.run.app). Look up any of 111,118 trials by NCT ID, e.g. [NCT00456846](https://ctrisk-lookup-420431563670.us-east1.run.app/trial/NCT00456846): a 2008 breast-cancer trial that was terminated. The model, which never saw its outcome, ranks it riskier than 93% of active trials. JSON: `/api/trials/{nct_id}`.
+
 Full validation report: [`docs/model_card.md`](docs/model_card.md) · Audit: [`docs/audits/2026-10-01-point-in-time.md`](docs/audits/2026-10-01-point-in-time.md) · Dashboard: [`docs/dashboard/index.html`](docs/dashboard/index.html) · Design: [`docs/specs/2026-09-26-design.md`](docs/specs/2026-09-26-design.md)
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  A["AACT registry snapshot<br/>605k studies"] --> S1["PySpark<br/>clean, label, attributes, text"]
-  F["FAERS reports<br/>3.2M, 2004–2020 Q1"] --> S2["PySpark<br/>flatten, match drugs"]
-  S1 --> P[("Parquet")]
-  S2 --> P
-  P -->|gcloud rsync| G[("GCS")]
-  G -->|external stage| W["Snowflake<br/>features as of each start date"]
+  A["AACT registry snapshot<br/>605k studies"] --> G1[("GCS<br/>raw/")]
+  F["FAERS reports<br/>3.2M, 2004–2020 Q1"] --> G1
+  G1 --> S["Dataproc Serverless<br/>PySpark: clean, label,<br/>match drugs, attributes, text"]
+  S --> G2[("GCS<br/>parquet/")]
+  G2 -->|external stage| W["Snowflake<br/>features as of each start date,<br/>checks, versioned clones"]
   W --> M["LightGBM + text SVD<br/>time-split validation"]
-  M --> R["TRIAL_RISK_SCORES<br/>29,894 active trials"]
-  R --> D["Dashboard, model card"]
+  M -->|every trial, out of fold| W2["Snowflake<br/>TRIAL_LOOKUP"]
+  W2 -->|COPY INTO unload| G3[("GCS<br/>serving/")]
+  G3 --> C["Cloud Run<br/>public lookup"]
   H["25 archived AACT snapshots<br/>2017–2021"] --> AU["Point-in-time audit"]
   AU -.->|fields that leak are dropped| M
 ```
 
 - **Data:** the AACT flat-file snapshot of ClinicalTrials.gov, and a FAERS sample (Q1 of each year 2004–2020, 14.9 GB zipped).
-- **Spark (local):** cleans and labels the trials and matches each drug to FDA-coded substances (66.9% of labeled trials matched; spot checks against openFDA agree). Also builds per-trial attributes and a registration-text field.
+- **GCS:** the data lake, holding the raw AACT tables and FAERS zips, the Spark output, and the published lookup.
+- **Spark on Dataproc Serverless:** the same PySpark modules run locally for tests or as serverless batches (`make <job> MODE=cloud`), each with an executor cap and a TTL. Rebuilding the trial table in the cloud took 3.6 minutes and about $0.03, with identical counts to the local run. The job cleans and labels the trials and matches each drug to FDA-coded substances (66.9% of labeled trials matched; spot checks against openFDA agree). Also builds per-trial attributes and a registration-text field.
 - **Snowflake:** loads the Parquet from GCS. Builds the FAERS and sponsor-history features as of each trial's start date only, with tests that catch planted leakage.
 - **Model:** LightGBM on the tabular features plus 64 SVD components of TF-IDF text. Tuned on an inner time split of the training years. Every model is versioned (`models/vN/`) with its metrics, features and the Snowflake clone it was trained on.
-- **Serving:** scores for every active trial are appended to `TRIAL_RISK_SCORES`, with the three largest per-trial contributors as `feature=value` and a signed contribution. A one-file dashboard and a model card are generated from the saved metrics.
+- **Serving:** every trial in the modelled population gets a score that never used its own outcome:
+  - active trials: the final model
+  - trials that started 2015 or later: held out from training
+  - 2008–2014 trials: leave-one-start-year-out cross-fitting (their scores average 13.4% vs a 13.9% actual termination rate)
+
+  Snowflake joins the scores to trial details (`TRIAL_LOOKUP`) and unloads them to GCS with `COPY INTO`. A FastAPI app on Cloud Run loads that file at startup, so it scales to zero and never queries Snowflake per visitor. Active-trial scores are also appended to `TRIAL_RISK_SCORES` for the prospective backtest. A one-file dashboard and a model card are generated from the saved metrics.
 
 ## Results (model v4: trained on 2008–2014 starts, tested on 2015–2016)
 
@@ -138,7 +146,18 @@ make audit                                    # M6: latest-record vs point-in-ti
 make backtest                                 # scores written earlier vs outcomes known now
 make report                                   # docs/model_card.md: the full validation report for the latest model
 make m6                                       # all of the above from trials onward, plus the audit if AACT_ARCHIVES is set
+make lookup                                   # every trial scored without its own outcome -> TRIAL_LOOKUP_SCORES
+make publish                                  # Snowflake unloads TRIAL_LOOKUP to gs://$GCP_BUCKET/serving/
+make deploy                                   # the public lookup app on Cloud Run
 make test
+```
+
+Cloud mode (after the one-time `sql/01_serving_setup.sql` in Snowsight and `scripts/gcp_setup.sh`):
+
+```bash
+make upload-raw                               # raw AACT tables and FAERS zips -> gs://$GCP_BUCKET/raw/
+make trials MODE=cloud DRY_RUN=1              # print the Dataproc batch and its worst-case cost
+make trials faers match attributes text MODE=cloud   # the Spark jobs on Dataproc Serverless, writing to GCS
 ```
 
 ## Snowflake setup (once)
