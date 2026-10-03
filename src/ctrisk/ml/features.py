@@ -2,7 +2,8 @@
 import numpy as np
 import pandas as pd
 
-NOT_INPUTS = {"nct_id", "label", "label_enrollment", "label_safety", "split", "start_date", "text"}
+NOT_INPUTS = {"nct_id", "label", "label_enrollment", "label_safety", "split", "start_date", "text", "embedding",
+              "end_date"}
 CATEGORICAL = {"phase", "allocation", "intervention_model", "primary_purpose", "masking",
                "sponsor_class", "sex", "responsible_party"}
 FAERS = ["n_substances", "faers_reports", "faers_reports_12m", "faers_serious_share",

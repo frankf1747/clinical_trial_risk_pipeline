@@ -24,7 +24,7 @@ from ctrisk.ml.evaluate import bootstrap_auc_ci, calibration, calibration_fit, m
 REGISTRY = ["phase", "number_of_arms", "allocation", "intervention_model", "primary_purpose", "masking",
             "sponsor_class", "has_dmc", "n_countries", "us_only", "min_age_years", "max_age_years",
             "healthy_volunteers", "sex", "criteria_count", "criteria_chars", "responsible_party",
-            "n_collaborators", "n_keywords", "text"]
+            "n_collaborators", "n_keywords", "text", "embedding"]   # embedding: of the text, archived or latest
 
 
 def registry_columns(columns) -> list[str]:
@@ -56,6 +56,8 @@ def overlay(latest: pd.DataFrame, pit: pd.DataFrame, columns: list[str]) -> pd.D
 def _canon(values: pd.Series) -> pd.Series:
     """Comparable form: 3 == 3.0 == Decimal('3'), True == np.True_, None == NaN."""
     def one(v):
+        if isinstance(v, (np.ndarray, list)):                 # an embedding: equal if the vector is the same
+            return np.round(np.asarray(v, dtype=float), 5).tobytes().hex()
         if v is None or (not isinstance(v, str) and pd.isna(v)):
             return "<NA>"
         if isinstance(v, (bool, np.bool_)):
@@ -158,6 +160,10 @@ if __name__ == "__main__":
         frame = conn.cursor().execute(f"SELECT * FROM {clone} WHERE split = 'recent'").fetch_pandas_all()
     frame.columns = frame.columns.str.lower()
     pit = pd.read_parquet(cfg.path("parquet_pit", "registry_at_start"))   # local parquet (MODE=local)
+    if getattr(model, "embed", None):     # M9: the archived text's embedding replaces the latest one
+        from ctrisk.ml.embed import attach
+        frame = attach(frame, cfg.path("parquet", "trial_embeddings"))
+        pit = attach(pit, cfg.path("parquet_pit", "embeddings"))
     report = compare(model, frame, pit, registry_columns(frame.columns))
 
     out = MODELS_DIR / f"v{version}" / "audit_point_in_time.json"

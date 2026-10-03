@@ -17,6 +17,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+from ctrisk.ml.embed import EmbeddingFeatures
 from ctrisk.ml.evaluate import (
     bootstrap_auc_ci,
     calibration,
@@ -62,13 +63,19 @@ def logistic_regression(columns: list[str]):
     return make_pipeline(prep, LogisticRegression(max_iter=2000))
 
 
+def _embed(rows: pd.DataFrame) -> EmbeddingFeatures | None:
+    """Embedding components fit on these rows, when the frame carries embeddings (M9); else None."""
+    return EmbeddingFeatures().fit(rows["embedding"]) if "embedding" in rows.columns else None
+
+
 def tune(frame: pd.DataFrame, y: pd.Series, columns: list[str], grid: list[dict], text_min_df: int) -> tuple[dict, list]:
     """Pick LightGBM params on an inner time split of the training rows; text is fit once on the inner train."""
     inner = pd.to_datetime(frame["start_date"]) < TUNE_SPLIT
     text = TextFeatures(min_df=text_min_df).fit(frame.loc[inner, "text"])
+    embed = _embed(frame[inner])
     results = []
     for g in grid:
-        m = RiskModel(columns, {**BASE_PARAMS, **g}, text=text, fit_text=False)
+        m = RiskModel(columns, {**BASE_PARAMS, **g}, text=text, fit_text=False, embed=embed, fit_embed=False)
         m.fit(frame[inner], y[inner], valid=(frame[~inner], y[~inner]))
         results.append({**g, "n_estimators": int(m.best_iteration),
                         "val_auc": round(float(roc_auc_score(y[~inner], m.predict_proba(frame[~inner]))), 4)})
@@ -90,7 +97,8 @@ def rolling_origin(frame: pd.DataFrame, y: pd.Series, columns: list[str], params
         yf, yh = y[fit.index], y[held.index]
         if yf.nunique() < 2 or yh.nunique() < 2:
             continue
-        p = RiskModel(columns, params, text=TextFeatures(min_df=text_min_df)).fit(fit, yf).predict_proba(held)
+        embed = EmbeddingFeatures() if "embedding" in frame.columns else None
+        p = RiskModel(columns, params, text=TextFeatures(min_df=text_min_df), embed=embed).fit(fit, yf).predict_proba(held)
         out.append({"test_years": f"{first}-{first + 1}", "train_n": len(fit), "n": len(held),
                     "positives": int(yh.sum()), "roc_auc": round(float(roc_auc_score(yh, p)), 4),
                     "calibration_fit": calibration_fit(yh, p)})
@@ -119,9 +127,15 @@ def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: lis
     lr = logistic_regression(columns).fit(X_train, y[rows["train"]])
     models["logistic_regression"] = lambda f: lr.predict_proba(to_matrix(f, columns, cats)[0])[:, 1]
     shared = TextFeatures(min_df=text_min_df).fit(train["text"])
-    for name, (drop, use_text) in ABLATIONS.items():
+    shared_embed = _embed(train)
+    ablations = dict(ABLATIONS)
+    if shared_embed:                     # M9: which kind of text carries the signal
+        ablations |= {"lightgbm_tfidf_only": ([], "tfidf"), "lightgbm_embeddings_only": ([], "embeddings")}
+    for name, (drop, use_text) in ablations.items():
         cols = [c for c in columns if c not in drop]
-        m = RiskModel(cols, params, text=shared if use_text else None, fit_text=False).fit(train, y[rows["train"]])
+        text = shared if use_text in (True, "tfidf") else None
+        embed = shared_embed if use_text in (True, "embeddings") else None
+        m = RiskModel(cols, params, text=text, fit_text=False, embed=embed, fit_embed=False).fit(train, y[rows["train"]])
         models[name] = m
     for name, m in models.items():
         predict = m if callable(m) else m.predict_proba     # the LR baseline is a plain function
@@ -212,7 +226,10 @@ def _git_version() -> str:
 
 
 if __name__ == "__main__":
+    from pathlib import Path
+
     from ctrisk.config import load_config
+    from ctrisk.ml.embed import attach
     from ctrisk.ml.registry import MODELS_DIR, next_version, save
     from ctrisk.warehouse.snowflake import connect
 
@@ -225,12 +242,16 @@ if __name__ == "__main__":
         frame = cur.execute(f"SELECT * FROM {clone}").fetch_pandas_all()
     frame.columns = frame.columns.str.lower()
     frame["start_date"] = pd.to_datetime(frame["start_date"])
+    embeddings = Path("data", "parquet", "trial_embeddings")
+    if embeddings.exists():              # M9: biomedical sentence embeddings of the registration text
+        frame = attach(frame, embeddings)
 
     git = _git_version()  # before training, so a git problem cannot cost a finished model
     models, report = run(frame)
     manifest = {"version": version, "snowflake_clone": clone, "git": git,
                 "trained_at": datetime.now(UTC).isoformat(),
                 "params": {t: report["targets"][t]["params"] for t in TARGETS},
+                "text": "tf-idf svd" + (" + pubmedbert embeddings" if "embedding" in frame.columns else ""),
                 "train": "start 2008-2014 (tuned on <2013 vs 2013-2014)", "test": "start 2015-2016",
                 "recent": "start 2017-2020"}
     folder = save(MODELS_DIR, version, models, metrics={k: v for k, v in report.items() if k != "features"},

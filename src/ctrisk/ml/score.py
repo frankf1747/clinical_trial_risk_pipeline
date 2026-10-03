@@ -64,6 +64,9 @@ if __name__ == "__main__":
     with connect() as conn:
         frame = conn.cursor().execute("SELECT * FROM TRIAL_FEATURES WHERE split = 'score'").fetch_pandas_all()
         frame.columns = frame.columns.str.lower()
+        if getattr(overall, "embed", None):                        # M9 models read text embeddings too
+            from ctrisk.ml.embed import attach
+            frame = attach(frame, "data/parquet/trial_embeddings")
         if frame.empty:
             raise SystemExit("no active trials to score (split = 'score' is empty)")
         p = overall.predict_proba(frame)

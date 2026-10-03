@@ -15,10 +15,12 @@ import json
 import numpy as np
 import pandas as pd
 
+from ctrisk.ml.embed import EmbeddingFeatures, attach
 from ctrisk.ml.model import RiskModel, collapse_text
 from ctrisk.ml.text import TextFeatures
 from ctrisk.serving.labels import reason_text
 
+EMBEDDINGS = "data/parquet/trial_embeddings"
 SCORE_TYPES = {"score": "forward", "test": "held_out", "recent": "held_out", "later": "held_out",
                "train": "out_of_fold"}
 
@@ -27,7 +29,9 @@ def _like(model: RiskModel) -> RiskModel:
     """An unfitted model with the same columns, parameters and text settings."""
     text = (TextFeatures(n_components=model.text.n_components, min_df=model.text.min_df,
                          max_features=model.text.max_features) if model.text else None)
-    return RiskModel(model.columns, model.params, text=text)
+    embed = getattr(model, "embed", None)
+    return RiskModel(model.columns, model.params, text=text,
+                     embed=EmbeddingFeatures(n_components=embed.n_components) if embed else None)
 
 
 def cross_fit(model: RiskModel, frame: pd.DataFrame, y: pd.Series) -> tuple[pd.Series, np.ndarray, list[str]]:
@@ -138,6 +142,8 @@ if __name__ == "__main__":
         frame = conn.cursor().execute(f"SELECT * FROM {clone}").fetch_pandas_all()
         frame.columns = frame.columns.str.lower()
         frame = frame.reset_index(drop=True)
+        if getattr(models["label"], "embed", None):                # M9 models read text embeddings too
+            frame = attach(frame, EMBEDDINGS)
         overall = score_all(models["label"], frame, frame["label"])
         enrollment = score_all(models["label_enrollment"], frame, frame["label_enrollment"])
         nxt = None

@@ -95,3 +95,10 @@ def test_areas_an_archive_cannot_tell_keep_the_latest_value_and_are_counted():
     assert filled["area_skin"].tolist() == [True, False, False]       # C's archive knew: it stays False
     assert filled["phase"].isna().tolist() == [True, False, False]    # only the named columns are filled
     assert share == {"area_skin": 0.6667}
+
+
+def test_change_rates_compare_embedding_vectors():
+    latest = pd.DataFrame({"nct_id": ["A", "B"], "embedding": [np.array([0.1, 0.2]), np.array([0.3, 0.4])],
+                           "label": [1, 0]})
+    pit = pd.DataFrame({"nct_id": ["A", "B"], "embedding": [np.array([0.1, 0.2]), None]})
+    assert change_rates(latest, pit, ["embedding"]) == {"embedding": {"terminated": 0.0, "completed": 1.0, "gap": -1.0}}

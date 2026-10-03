@@ -8,14 +8,17 @@ from ctrisk.ml.text import TextFeatures
 
 
 class RiskModel:
-    def __init__(self, columns: list[str], params: dict, text: TextFeatures | None, fit_text: bool = True):
+    def __init__(self, columns: list[str], params: dict, text: TextFeatures | None, fit_text: bool = True,
+                 embed=None, fit_embed: bool = True):
         self.columns, self.params, self.text, self.fit_text = list(columns), dict(params), text, fit_text
+        self.embed, self.fit_embed = embed, fit_embed      # M9: EmbeddingFeatures over frame["embedding"]
         self.categories: dict | None = None
         self.lgbm: lgb.LGBMClassifier | None = None
 
     @property
     def feature_names(self) -> list[str]:
-        return self.columns + (self.text.columns if self.text else [])
+        embed = getattr(self, "embed", None)                 # models saved before M9 have no embed
+        return self.columns + (self.text.columns if self.text else []) + (embed.columns if embed else [])
 
     @property
     def best_iteration(self) -> int:
@@ -27,11 +30,15 @@ class RiskModel:
             self.categories = learned
         if self.text:
             X = pd.concat([X, self.text.transform(frame["text"])], axis=1)
+        if getattr(self, "embed", None):
+            X = pd.concat([X, self.embed.transform(frame["embedding"])], axis=1)
         return X
 
     def fit(self, frame: pd.DataFrame, y: pd.Series, valid: tuple | None = None) -> "RiskModel":
         if self.text and self.fit_text:
             self.text.fit(frame["text"])
+        if getattr(self, "embed", None) and self.fit_embed:
+            self.embed.fit(frame["embedding"])
         X = self._matrix(frame)                      # learns categories from the training frame only
         kwargs = {}
         if valid is not None:
@@ -48,8 +55,9 @@ class RiskModel:
 
 
 def collapse_text(contrib: np.ndarray, names: list[str]) -> tuple[np.ndarray, list[str]]:
-    """Sum the txt_* SVD columns into one 'registration_text' column, appended last, for readable drivers."""
-    is_text = [n.startswith("txt_") for n in names]
+    """Sum the text columns (txt_* SVD, emb_* embedding components) into one 'registration_text' column,
+    appended last, for readable drivers."""
+    is_text = [n.startswith(("txt_", "emb_")) for n in names]
     keep = [i for i, t in enumerate(is_text) if not t]
     text_idx = [i for i, t in enumerate(is_text) if t]
     out, out_names = contrib[:, keep], [names[i] for i in keep]
