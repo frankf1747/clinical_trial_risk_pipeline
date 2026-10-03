@@ -13,7 +13,8 @@ from ctrisk.ml.features import POST_START_LEAKS
 REPO_URL = "https://github.com/frankf1747/clinical_trial_risk_pipeline"
 
 
-def summary(metrics: dict, manifest: dict, audit: dict | None, counts: dict, lookup_file: str) -> dict:
+def summary(metrics: dict, manifest: dict, audit: dict | None, counts: dict, lookup_file: str,
+            survival: dict | None = None) -> dict:
     """What the app's front page says about the model, taken from the version's saved files."""
     t = metrics["targets"]
     test = t["label"]["models"]["lightgbm"]["test"]
@@ -34,6 +35,15 @@ def summary(metrics: dict, manifest: dict, audit: dict | None, counts: dict, loo
         lo, hi = m["auc_drop_ci95"]
         out["audit"] = {"auc_change": round(-m["auc_drop"], 4), "ci95": [round(-hi, 4), round(-lo, 4)],
                         "n": m["n"], "archives": len(audit.get("archives") or [])}
+    if survival:
+        test = survival["metrics"]["cohorts"]["test"]
+        two = test["by_horizon"]["2y"]
+        trend = {r["start_years"]: r["terminated_2y"] for r in survival["metrics"].get("incidence_by_start_cohort", [])}
+        out["survival"] = {"version": f"survival v{survival['manifest']['version']}",
+                           "time_auc_2y": two["time_auc"], "time_auc_2y_yes_no": two["time_auc_yes_no_model"],
+                           "time_auc_2y_ci95": test["time_auc_2y_bootstrap"]["ci95"],
+                           "gain_2y_ci95": test["time_auc_2y_bootstrap"]["difference_ci95"],
+                           "terminated_2y_by_start": trend}
     return out
 
 
@@ -60,7 +70,11 @@ if __name__ == "__main__":
                     "FILE_FORMAT = (TYPE = PARQUET) HEADER = TRUE SINGLE = TRUE OVERWRITE = TRUE "
                     "MAX_FILE_SIZE = 268435456")
         unloaded = cur.fetchall()
-    doc = summary(docs["metrics"], docs["manifest"], docs.get("audit_point_in_time"), counts, lookup_file)
+    survival = None
+    if any((MODELS_DIR / "survival").glob("v*")):
+        _, sdocs = load(MODELS_DIR / "survival", latest(MODELS_DIR / "survival"))
+        survival = {"metrics": sdocs["metrics"], "manifest": sdocs["manifest"]}
+    doc = summary(docs["metrics"], docs["manifest"], docs.get("audit_point_in_time"), counts, lookup_file, survival)
     local = Path("data") / "serving" / "current.json"
     local.parent.mkdir(parents=True, exist_ok=True)
     local.write_text(json.dumps(doc, indent=2))

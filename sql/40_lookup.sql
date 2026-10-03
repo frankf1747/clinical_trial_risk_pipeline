@@ -9,7 +9,8 @@ WITH latest AS (
     FROM TRIAL_LOOKUP_SCORES
 )
 SELECT l.nct_id, t.brief_title, t.phase, t.sponsor_name, t.sponsor_class, t.status, t.start_date,
-       l.model_version, l.score_type, l.risk_score, l.risk_percentile, l.enrollment_risk_score, l.reasons
+       l.model_version, l.score_type, l.risk_score, l.risk_percentile, l.enrollment_risk_score, l.reasons,
+       l.years_running, l.next_2y_risk, l.next_2y_percentile
 FROM latest l
 JOIN RAW_TRIALS t ON t.nct_id = l.nct_id
 WHERE l.rn = 1;

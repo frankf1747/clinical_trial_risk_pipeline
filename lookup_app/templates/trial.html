@@ -19,6 +19,20 @@
   <p class="small" style="margin-bottom:0">{{ how }}</p>
 </div>
 
+{% if t.next_2y_risk is not none %}
+<h2>The next 2 years</h2>
+<div class="card">
+  <div class="stat"><b>{{ "%.0f"|format(t.next_2y_risk * 100) }}%</b>
+    <span class="muted small">chance of termination {% if t.years_running == 0 %}in its first 2 years once it starts
+    recruiting{% else %}in the next 2 years,
+    given it has been running {{ "%.1f"|format(t.years_running) }} years{% endif %}{% if t.next_2y_percentile is not none %}: higher than
+    {{ "%.0f"|format([t.next_2y_percentile, 99]|min) }}% of running trials over the same window{% endif %}.</span></div>
+  <p class="small muted" style="margin-bottom:0">From the competing-risks survival model (termination vs completion,
+  still-running trials censored). It ranks well, but it was fit to trials that started 2008–2014, and termination
+  risk has risen since. Read the percentage as a lower bound.</p>
+</div>
+{% endif %}
+
 <h2>What moved the score</h2>
 <div class="card">
   {% if t.reasons %}

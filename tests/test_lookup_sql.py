@@ -14,12 +14,13 @@ def db():
         ('A', 'Drug A in lung cancer', 'PHASE2', 'Acme', 'INDUSTRY', 'RECRUITING', DATE '2024-01-01'),
         ('B', 'Drug B in asthma',      'PHASE3', 'State U', 'OTHER', 'COMPLETED', DATE '2010-05-01')""")
     con.execute("""CREATE TABLE TRIAL_LOOKUP_SCORES (nct_id STRING, model_version STRING, score_type STRING,
-        risk_score FLOAT, risk_percentile FLOAT, enrollment_risk_score FLOAT, reasons STRING)""")
+        risk_score FLOAT, risk_percentile FLOAT, enrollment_risk_score FLOAT, reasons STRING,
+        years_running FLOAT, next_2y_risk FLOAT, next_2y_percentile FLOAT)""")
     con.execute("""INSERT INTO TRIAL_LOOKUP_SCORES VALUES
-        ('A', 'v4',  'forward',     0.30, 91.0, 0.12, '[]'),
-        ('A', 'v10', 'forward',     0.35, 93.0, 0.10, '[]'),     -- v10 is newer than v4, not older
-        ('B', 'v4',  'out_of_fold', 0.05, 12.5, 0.01, '[]'),
-        ('Z', 'v4',  'forward',     0.20, 50.0, 0.05, '[]')""")  # Z: no registry row, left out
+        ('A', 'v4',  'forward',     0.30, 91.0, 0.12, '[]', 2.5, 0.08, 70.0),
+        ('A', 'v10', 'forward',     0.35, 93.0, 0.10, '[]', 2.5, 0.09, 75.0),     -- v10 is newer than v4, not older
+        ('B', 'v4',  'out_of_fold', 0.05, 12.5, 0.01, '[]', NULL, NULL, NULL),
+        ('Z', 'v4',  'forward',     0.20, 50.0, 0.05, '[]', 1.0, 0.05, 40.0)""")  # Z: no registry row, left out
     run_files(con, [SQL_DIR / "40_lookup.sql"])
     return con
 
@@ -29,3 +30,8 @@ def test_lookup_has_one_row_per_trial_from_the_newest_version(db):
                       "ORDER BY nct_id").fetchall()
     assert rows == [("A", "v10", pytest.approx(0.35), "Acme", "RECRUITING"),
                     ("B", "v4", pytest.approx(0.05), "State U", "COMPLETED")]
+
+
+def test_lookup_carries_the_next_two_years_for_running_trials(db):
+    assert db.execute("SELECT nct_id, next_2y_risk FROM TRIAL_LOOKUP ORDER BY nct_id").fetchall() == [
+        ("A", pytest.approx(0.09)), ("B", None)]

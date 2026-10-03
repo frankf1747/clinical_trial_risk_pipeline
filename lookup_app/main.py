@@ -48,7 +48,8 @@ class Store:
     def get(self, nct_id: str) -> dict | None:
         if nct_id not in self.trials.index:
             return None
-        row = self.trials.loc[nct_id].to_dict()
+        row = {k: (None if not isinstance(v, str) and pd.isna(v) else v)          # NaN is not valid JSON
+               for k, v in self.trials.loc[nct_id].to_dict().items()}
         row["nct_id"] = nct_id
         row["reasons"] = json.loads(row.get("reasons") or "[]")
         row["start_date"] = None if pd.isna(row.get("start_date")) else str(row["start_date"])[:10]

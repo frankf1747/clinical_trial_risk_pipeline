@@ -391,5 +391,55 @@
         }
       ]
     }
-  }
+  },
+  "incidence_by_start_cohort": [
+    {
+      "start_years": "2008-2010",
+      "n": 15112,
+      "still_running": 0.007,
+      "terminated_1y": 0.0293,
+      "terminated_2y": 0.0625,
+      "terminated_5y": 0.122
+    },
+    {
+      "start_years": "2011-2012",
+      "n": 10169,
+      "still_running": 0.012,
+      "terminated_1y": 0.0214,
+      "terminated_2y": 0.0518,
+      "terminated_5y": 0.1124
+    },
+    {
+      "start_years": "2013-2014",
+      "n": 10426,
+      "still_running": 0.023,
+      "terminated_1y": 0.0202,
+      "terminated_2y": 0.0505,
+      "terminated_5y": 0.1143
+    },
+    {
+      "start_years": "2015-2016",
+      "n": 10694,
+      "still_running": 0.047,
+      "terminated_1y": 0.0223,
+      "terminated_2y": 0.057,
+      "terminated_5y": 0.1199
+    },
+    {
+      "start_years": "2017-2018",
+      "n": 11043,
+      "still_running": 0.092,
+      "terminated_1y": 0.0229,
+      "terminated_2y": 0.0598,
+      "terminated_5y": 0.1347
+    },
+    {
+      "start_years": "2019-2020",
+      "n": 11498,
+      "still_running": 0.168,
+      "terminated_1y": 0.0356,
+      "terminated_2y": 0.0743,
+      "terminated_5y": 0.1527
+    }
+  ]
 }

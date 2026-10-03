@@ -41,6 +41,17 @@ def population(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def incidence_by_cohort(pop: pd.DataFrame, cohorts=((2008, 2011), (2011, 2013), (2013, 2015), (2015, 2017),
+                                                       (2017, 2019), (2019, 2021))) -> list[dict]:
+    """Censoring-adjusted (Aalen-Johansen) probability of termination within 1, 2 and 5 years, by start years."""
+    out = []
+    for lo, hi in cohorts:
+        c = pop[(pop["start"].dt.year >= lo) & (pop["start"].dt.year < hi)]
+        out.append({"start_years": f"{lo}-{hi - 1}", "n": len(c), "still_running": round(float((c["event"] == 0).mean()), 3),
+                    **{f"terminated_{h:g}y": round(aalen_johansen(c["time"], c["event"], h), 4) for h in (1.0, 2.0, 5.0)}})
+    return out
+
+
 def tune(fit: pd.DataFrame, columns: list[str], grid: list[dict], text_min_df: int) -> tuple[dict, list]:
     inner, valid = fit[fit["start"] < TUNE_SPLIT], fit[fit["start"] >= TUNE_SPLIT]
     results = []
@@ -99,7 +110,7 @@ def run(frame: pd.DataFrame, columns: list[str], yes_no_model, grid=GRID, text_m
               "fit": {"n": len(fit), "terminated": int((fit["event"] == 1).sum()),
                       "completed": int((fit["event"] == 2).sum()), "censored": int((fit["event"] == 0).sum()),
                       "dropped_no_end_date": int(frame["label"].notna().sum() - pop["label"].notna().sum())},
-              "cohorts": {}}
+              "cohorts": {}, "incidence_by_start_cohort": incidence_by_cohort(pop)}
     for name, (lo, hi) in COHORTS.items():
         c = pop[(pop["start"] >= lo) & (pop["start"] < hi)]
         report["cohorts"][name] = evaluate(model, fit, c, yes_no_model.predict_proba(c))

@@ -2,7 +2,7 @@
 
 Which drug trials will be stopped early? This pipeline ranks every active Phase 1–3 drug trial on ClinicalTrials.gov by its risk of termination, from the registry record, the sponsor's track record before the trial started, and the drug's FDA adverse-event (FAERS) reporting history before the trial started.
 
-**In short.** On 10,242 trials that started in 2015–2016, which the model never saw, it ranks a terminated trial above a completed one 70% of the time (ROC AUC **0.703**, 95% CI 0.690–0.716). Its top-scored 10% terminate at 2.1× the base rate (30.5% vs 14.8%). For termination caused by slow enrollment, the AUC is 0.783. Registry records get edited after trials start, which can leak the outcome into the features. A point-in-time audit rebuilt the registry fields from 25 archived snapshots as they stood at each trial's start. It found that four fields leaked, so the current model (v4) leaves them out. Scored with the at-start records, v4's AUC does not drop (change +0.002, 95% CI −0.001 to +0.004, 18,568 trials).
+**In short.** On 10,242 trials that started in 2015–2016, which the model never saw, it ranks a terminated trial above a completed one 70% of the time (ROC AUC **0.703**, 95% CI 0.690–0.716). Its top-scored 10% terminate at 2.1× the base rate (30.5% vs 14.8%). For termination caused by slow enrollment, the AUC is 0.783. Registry records get edited after trials start, which can leak the outcome into the features. A point-in-time audit rebuilt the registry fields from 25 archived snapshots as they stood at each trial's start. It found that four fields leaked, so the current model (v4) leaves them out. Scored with the at-start records, v4's AUC does not drop (change +0.002, 95% CI −0.001 to +0.004, 18,568 trials). A competing-risks survival model adds when: for running trials, the chance of termination in the next 2 years, ranked better than the yes/no model at every horizon tested (significantly at 2 years).
 
 **Try it:** [ctrisk-lookup-420431563670.us-east1.run.app](https://ctrisk-lookup-420431563670.us-east1.run.app). Look up any of 111,118 trials by NCT ID, e.g. [NCT00456846](https://ctrisk-lookup-420431563670.us-east1.run.app/trial/NCT00456846): a 2008 breast-cancer trial that was terminated. The model, which never saw its outcome, ranks it riskier than 93% of active trials. JSON: `/api/trials/{nct_id}`.
 
@@ -48,6 +48,30 @@ flowchart LR
 **What drives the scores** (mean SHAP contribution on the test set): the registration text, then whether the trial accepts healthy volunteers (No raises risk, Yes lowers it), the sponsor's prior termination rate (high third +0.25, low third −0.20 log-odds), and phase (Phase 2 up, Phase 1 and 3 down). These describe the model, not causes of termination. Text adds +0.014 AUC. FAERS history adds nothing measurable on this sample: removing it leaves 0.704.
 
 **v3 vs v4.** v3 also used criteria count and length, country count and US-only. It scored higher on the test years (0.714, 95% CI 0.700–0.726), but the audit showed those fields had changed after start more often for trials that later terminated. v3 lost 0.005 AUC when scored on the at-start records; v4 loses nothing. v4 trades 0.011 of headline AUC for a number that holds up: those fields carried real signal as well as the leak.
+
+### When, not just whether: a competing-risks survival model
+
+The yes/no model learns only from finished trials and cannot say when a trial will stop. The survival model (M8) does both:
+- **Outcomes:** a trial ends terminated or completed (competing events), or is still running at the snapshot (censored), so the ~30,000 running trials inform the model instead of being dropped.
+- **Model:** discrete-time hazards, one row per 6-month period a trial was at risk, from LightGBM on the same features and text.
+- **Output:** the probability of termination within t years of the start. For a running trial: within the next 2 years, given how long it has already run. That's the number the [lookup](https://ctrisk-lookup-420431563670.us-east1.run.app) shows.
+
+It's evaluated with metrics built for censored data. Time-dependent AUC asks whether trials terminated by t rank above those still running or completed by t, weighted by the inverse probability of censoring:
+
+| Ranking terminations by t (time-AUC) | Within 1 year | Within 2 years (95% CI) | Within 5 years |
+|---|---|---|---|
+| Survival model, 2015–16 starts | 0.671 | 0.646 (0.625–0.666) | 0.683 |
+| Yes/no model v4, same trials | 0.552 | 0.614 | 0.676 |
+| Survival model, 2017–20 starts (13% still running) | 0.635 | 0.646 (0.631–0.658) | 0.664 |
+| Yes/no model v4, same trials | 0.535 | 0.591 | 0.650 |
+
+The survival model's gain is clear for early terminations: at 2 years it's +0.009 to +0.054 (2015–16) and +0.041 to +0.071 (2017–20), paired bootstrap. Its absolute probabilities run low for later starts (2-year: 4.9% predicted vs 5.7% observed for 2015–16), because the risk itself has moved. Censoring-adjusted termination within 2 years, by start years:
+
+| 2008–10 | 2011–12 | 2013–14 | 2015–16 | 2017–18 | 2019–20 |
+|---|---|---|---|---|---|
+| 6.3% | 5.2% | 5.1% | 5.7% | 6.0% | **7.4%** |
+
+Termination fell through the early 2010s and has risen since: trials that started in 2019–20 (the COVID era) were terminated within 2 years about 45% more often than 2013–14 starts. The binary approach could not measure this, because it cannot adjust for trials still running. Details: [`docs/survival_card.md`](docs/survival_card.md).
 
 ## Why the number can be trusted
 
@@ -146,6 +170,7 @@ make audit                                    # M6: latest-record vs point-in-ti
 make backtest                                 # scores written earlier vs outcomes known now
 make report                                   # docs/model_card.md: the full validation report for the latest model
 make m6                                       # all of the above from trials onward, plus the audit if AACT_ARCHIVES is set
+make survival                                 # competing-risks survival model -> models/survival/vN/
 make lookup                                   # every trial scored without its own outcome -> TRIAL_LOOKUP_SCORES
 make publish                                  # Snowflake unloads TRIAL_LOOKUP to gs://$GCP_BUCKET/serving/
 make deploy                                   # the public lookup app on Cloud Run

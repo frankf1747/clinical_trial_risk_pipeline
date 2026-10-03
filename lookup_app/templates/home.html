@@ -23,6 +23,13 @@ termination-risk score, how it ranks against the trials running now, and what mo
   (95% CI {{ "%+.3f"|format(s.audit.ci95[0]) }} to {{ "%+.3f"|format(s.audit.ci95[1]) }}) on {{ "{:,}".format(s.audit.n) }} trials.
   Fields found edited after start are left out of the model.</p>
   {% endif %}
+  {% if s.survival %}
+  <p class="small">When, not just whether: a competing-risks survival model ranks which trials terminate within
+  2 years at time-AUC {{ "%.3f"|format(s.survival.time_auc_2y) }} (95% CI {{ "%.3f"|format(s.survival.time_auc_2y_ci95[0]) }}–{{ "%.3f"|format(s.survival.time_auc_2y_ci95[1]) }}),
+  ahead of the yes/no model ({{ "%.3f"|format(s.survival.time_auc_2y_yes_no) }}), with still-running trials handled as censored.
+  Termination risk is rising: {{ "%.1f"|format(s.survival.terminated_2y_by_start["2013-2014"] * 100) }}% of trials started in 2013–14
+  were terminated within 2 years, against {{ "%.1f"|format(s.survival.terminated_2y_by_start["2019-2020"] * 100) }}% of those started in 2019–20.</p>
+  {% endif %}
   <p class="small muted">Tested on trials that started in 2015–2016, after training on 2008–2014. The score ranks trials;
   read it as a percentile, not a promise. Reasons describe the model, not causes of termination.</p>
 </div>

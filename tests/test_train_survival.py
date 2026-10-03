@@ -36,3 +36,5 @@ def test_run_fits_on_pre_2015_starts_and_reports_both_cohorts(monkeypatch):
     two = report["cohorts"]["test"]["by_horizon"]["2y"]
     assert two["time_auc"] > 0.65 and two["brier"] < two["brier_null"]
     assert len(report["cohorts"]["recent"]["calibration_2y"]) == 10
+    trend = report["incidence_by_start_cohort"]
+    assert trend[0]["start_years"] == "2008-2010" and 0 < trend[0]["terminated_2y"] < trend[0]["terminated_5y"] < 1

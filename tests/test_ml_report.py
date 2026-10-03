@@ -75,3 +75,14 @@ def test_status_reports_a_complete_audit_instead_of_calling_the_model_preliminar
     assert "changes AUC by +0.002 (95% CI -0.001 to +0.004) on 18,568 trials" in text
     partial = {**audit, "archives": ["2017-01-03", "2017-12-14"]}
     assert "**Preliminary.**" in card(metrics, manifest, features, partial)
+
+
+def test_survival_card_reports_time_auc_comparison_calibration_and_trend():
+    from ctrisk.ml.report import survival_card
+    folder = Path(__file__).resolve().parents[1] / "models" / "survival" / "v1"
+    metrics, manifest = (json.loads((folder / f"{n}.json").read_text()) for n in ("metrics", "manifest"))
+    text = survival_card(metrics, manifest)
+    assert "# Survival model card: when and how trials end, survival v1" in text
+    assert "| 2015–2016 starts | 2y | 0.646 | 0.614 |" in text
+    assert "+0.009 to +0.054" in text
+    assert "| 2019-2020 | 11,498 | 16.8% | 3.6% | 7.4% | 15.3% |" in text

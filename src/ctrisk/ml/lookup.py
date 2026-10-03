@@ -80,9 +80,35 @@ def reasons(contrib: dict, trial: dict, up: int = 3, down: int = 2) -> list[dict
             for f, c in picks]
 
 
-def lookup_rows(frame: pd.DataFrame, overall: pd.DataFrame, enrollment: pd.DataFrame, version: int) -> pd.DataFrame:
+MAX_ELAPSED = 6.0     # the survival model sees 8 years; a 2-year window must end inside that
+
+
+def years_running(start: pd.Series, status: pd.Series) -> pd.Series:
+    """Years from start to the snapshot; 0 for trials that have not started (future start date) or have not
+    begun recruiting even though their planned start has passed."""
+    from ctrisk.ml.survival import SNAPSHOT
+    years = ((pd.Timestamp(SNAPSHOT) - pd.to_datetime(start)).dt.days / 365.25).clip(lower=0)
+    return years.where(status.to_numpy() != "NOT_YET_RECRUITING", 0.0)
+
+
+def next_two_years(years_running: pd.Series, risk: pd.Series) -> pd.DataFrame:
+    """For running trials: years running, risk of termination in the next 2 years, and its percentile among
+    running trials. Empty for finished trials and for trials past MAX_ELAPSED years."""
+    years = years_running.round(1)                       # decide on the value that is stored and shown
+    ok = years.notna() & (years <= MAX_ELAPSED) & risk.notna()
+    out = pd.DataFrame({"years_running": years, "next_2y": risk.where(ok).round(4)})
+    out["next_2y_percentile"] = np.nan
+    if ok.any():
+        out.loc[ok, "next_2y_percentile"] = percentile(risk[ok].to_numpy(), risk[ok].to_numpy())
+    return out
+
+
+def lookup_rows(frame: pd.DataFrame, overall: pd.DataFrame, enrollment: pd.DataFrame, version: int,
+                next_2y: pd.DataFrame | None = None) -> pd.DataFrame:
     active = overall.loc[frame["split"] == "score", "score"].to_numpy()
     records = frame.to_dict("records")
+    nxt = next_2y if next_2y is not None else pd.DataFrame(
+        np.nan, index=frame.index, columns=["years_running", "next_2y", "next_2y_percentile"])
     return pd.DataFrame({
         "NCT_ID": frame["nct_id"].to_numpy(),
         "MODEL_VERSION": f"v{version}",
@@ -91,6 +117,9 @@ def lookup_rows(frame: pd.DataFrame, overall: pd.DataFrame, enrollment: pd.DataF
         "RISK_PERCENTILE": percentile(overall["score"].to_numpy(), active if len(active) else overall["score"]),
         "ENROLLMENT_RISK_SCORE": enrollment["score"].round(4).to_numpy(),
         "REASONS": [json.dumps(reasons(c, t)) for c, t in zip(overall["contrib"], records)],
+        "YEARS_RUNNING": nxt["years_running"].reindex(frame.index).to_numpy(),
+        "NEXT_2Y_RISK": nxt["next_2y"].reindex(frame.index).to_numpy(),
+        "NEXT_2Y_PERCENTILE": nxt["next_2y_percentile"].reindex(frame.index).to_numpy(),
     })
 
 
@@ -111,10 +140,20 @@ if __name__ == "__main__":
         frame = frame.reset_index(drop=True)
         overall = score_all(models["label"], frame, frame["label"])
         enrollment = score_all(models["label_enrollment"], frame, frame["label_enrollment"])
-        rows = lookup_rows(frame, overall, enrollment, version)
+        nxt = None
+        if any((MODELS_DIR / "survival").glob("v*")):              # M8: time to termination for running trials
+            survival, _ = load(MODELS_DIR / "survival", latest(MODELS_DIR / "survival"))
+            running = frame[frame["split"] == "score"]
+            status = dict(conn.cursor().execute("SELECT nct_id, status FROM RAW_TRIALS").fetchall())
+            years = years_running(running["start_date"], running["nct_id"].map(status))
+            risk = pd.Series(survival.conditional_cif(running, years.to_numpy(), window=2.0), index=running.index)
+            nxt = next_two_years(years.reindex(frame.index), risk.reindex(frame.index))
+        rows = lookup_rows(frame, overall, enrollment, version, next_2y=nxt)
         conn.cursor().execute("CREATE TABLE IF NOT EXISTS TRIAL_LOOKUP_SCORES (NCT_ID STRING, MODEL_VERSION STRING, "
                               "SCORE_TYPE STRING, RISK_SCORE FLOAT, RISK_PERCENTILE FLOAT, "
                               "ENROLLMENT_RISK_SCORE FLOAT, REASONS STRING)")
+        for col in ("YEARS_RUNNING", "NEXT_2Y_RISK", "NEXT_2Y_PERCENTILE"):
+            conn.cursor().execute(f"ALTER TABLE TRIAL_LOOKUP_SCORES ADD COLUMN IF NOT EXISTS {col} FLOAT")
         conn.cursor().execute("DELETE FROM TRIAL_LOOKUP_SCORES WHERE MODEL_VERSION = %s", (f"v{version}",))
         ok, _, n, _ = write_pandas(conn, rows, "TRIAL_LOOKUP_SCORES")
     counts = rows["SCORE_TYPE"].value_counts().to_dict()
