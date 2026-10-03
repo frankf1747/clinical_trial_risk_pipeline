@@ -8,7 +8,8 @@ from ctrisk.gates import DataGateError
 from ctrisk.warehouse.sql import SQL_DIR, failed_checks, run_files
 
 BUILD = [SQL_DIR / "10_raw_tables.sql", SQL_DIR / "11_copy.sql",
-         *sorted((SQL_DIR / "20_features").glob("*.sql"))]
+         *sorted((SQL_DIR / "20_features").glob("*.sql")),
+         SQL_DIR / "50_outcomes.sql"]                       # durations for the survival model, apart from features
 
 
 def connect():

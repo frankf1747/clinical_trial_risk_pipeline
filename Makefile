@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: lookup publish upload-raw deploy setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
+.PHONY: survival lookup publish upload-raw deploy setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
 	dashboard audit-build audit backtest report m6
 
 setup:
@@ -60,6 +60,10 @@ train:
 
 score:
 	uv run python -m ctrisk.ml.score
+
+# M8: competing-risks survival model (when and how trials end) on vN's rows -> models/survival/vN/
+survival:
+	uv run python -m ctrisk.ml.train_survival
 
 # Every trial in the modelled population scored without seeing its own outcome -> TRIAL_LOOKUP_SCORES
 lookup:
