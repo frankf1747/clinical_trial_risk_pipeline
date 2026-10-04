@@ -240,7 +240,7 @@ if __name__ == "__main__":
     with connect() as conn, conn.cursor() as cur:
         # Frozen training data. Replace is safe: a version number is only used once its folder is saved.
         cur.execute(f"CREATE OR REPLACE TABLE {clone} CLONE TRIAL_FEATURES")
-        frame = cur.execute(f"SELECT * FROM {clone}").fetch_pandas_all()
+        frame = cur.execute(f"SELECT * FROM {clone} ORDER BY nct_id").fetch_pandas_all()
     frame.columns = frame.columns.str.lower()
     frame["start_date"] = pd.to_datetime(frame["start_date"])
     embeddings = Path("data", "parquet", "trial_embeddings")

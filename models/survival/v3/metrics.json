@@ -1,0 +1,1259 @@
+{
+  "params": {
+    "n_estimators": 291,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.8,
+    "random_state": 0,
+    "verbose": -1,
+    "num_leaves": 31,
+    "learning_rate": 0.05,
+    "min_child_samples": 200
+  },
+  "grid": [
+    {
+      "num_leaves": 15,
+      "learning_rate": 0.05,
+      "min_child_samples": 200,
+      "n_estimators": 538,
+      "valid_time_auc_2y": 0.673
+    },
+    {
+      "num_leaves": 31,
+      "learning_rate": 0.05,
+      "min_child_samples": 200,
+      "n_estimators": 291,
+      "valid_time_auc_2y": 0.6775
+    },
+    {
+      "num_leaves": 63,
+      "learning_rate": 0.05,
+      "min_child_samples": 200,
+      "n_estimators": 170,
+      "valid_time_auc_2y": 0.6712
+    }
+  ],
+  "width_years": 0.5,
+  "periods": 16,
+  "fit": {
+    "n": 35792,
+    "terminated": 4912,
+    "completed": 30333,
+    "censored": 547,
+    "dropped_no_end_date": 1094
+  },
+  "cohorts": {
+    "test": {
+      "n": 10694,
+      "terminated": 1508,
+      "completed": 8681,
+      "censored": 505,
+      "by_horizon": {
+        "1y": {
+          "observed_cif": 0.0223,
+          "mean_predicted_cif": 0.0202,
+          "time_auc": 0.6523,
+          "time_auc_yes_no_model": 0.5535,
+          "brier": 0.0218,
+          "brier_null": 0.0219
+        },
+        "2y": {
+          "observed_cif": 0.057,
+          "mean_predicted_cif": 0.0506,
+          "time_auc": 0.6418,
+          "time_auc_yes_no_model": 0.6215,
+          "brier": 0.0533,
+          "brier_null": 0.0538
+        },
+        "3y": {
+          "observed_cif": 0.0861,
+          "mean_predicted_cif": 0.0771,
+          "time_auc": 0.66,
+          "time_auc_yes_no_model": 0.6562,
+          "brier": 0.077,
+          "brier_null": 0.0787
+        },
+        "5y": {
+          "observed_cif": 0.1199,
+          "mean_predicted_cif": 0.1146,
+          "time_auc": 0.6828,
+          "time_auc_yes_no_model": 0.6813,
+          "brier": 0.1012,
+          "brier_null": 0.1055
+        }
+      },
+      "time_auc_2y_bootstrap": {
+        "ci95": [
+          0.6205,
+          0.6663
+        ],
+        "difference_ci95": [
+          -0.0054,
+          0.0441
+        ]
+      },
+      "calibration_2y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0125,
+          "observed": 0.014,
+          "n": 1070
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0221,
+          "observed": 0.0271,
+          "n": 1070
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0285,
+          "observed": 0.0355,
+          "n": 1070
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.0342,
+          "observed": 0.0589,
+          "n": 1070
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.0401,
+          "observed": 0.0468,
+          "n": 1069
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.0465,
+          "observed": 0.0496,
+          "n": 1069
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.0542,
+          "observed": 0.0655,
+          "n": 1069
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.0646,
+          "observed": 0.0674,
+          "n": 1069
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.0796,
+          "observed": 0.0935,
+          "n": 1069
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.1242,
+          "observed": 0.1123,
+          "n": 1069
+        }
+      ],
+      "calibration_5y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0152,
+          "observed": 0.0206,
+          "n": 1070
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0384,
+          "observed": 0.0346,
+          "n": 1070
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0602,
+          "observed": 0.0664,
+          "n": 1070
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.079,
+          "observed": 0.0925,
+          "n": 1070
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.096,
+          "observed": 0.0879,
+          "n": 1069
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.114,
+          "observed": 0.1384,
+          "n": 1069
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.1332,
+          "observed": 0.1497,
+          "n": 1069
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.1564,
+          "observed": 0.1936,
+          "n": 1069
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.1882,
+          "observed": 0.1936,
+          "n": 1069
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.2656,
+          "observed": 0.2217,
+          "n": 1069
+        }
+      ]
+    },
+    "recent": {
+      "n": 22541,
+      "terminated": 3658,
+      "completed": 15938,
+      "censored": 2945,
+      "by_horizon": {
+        "1y": {
+          "observed_cif": 0.0294,
+          "mean_predicted_cif": 0.0192,
+          "time_auc": 0.6283,
+          "time_auc_yes_no_model": 0.5291,
+          "brier": 0.0285,
+          "brier_null": 0.0285
+        },
+        "2y": {
+          "observed_cif": 0.0672,
+          "mean_predicted_cif": 0.0497,
+          "time_auc": 0.6437,
+          "time_auc_yes_no_model": 0.5859,
+          "brier": 0.0622,
+          "brier_null": 0.0628
+        },
+        "3y": {
+          "observed_cif": 0.1013,
+          "mean_predicted_cif": 0.0767,
+          "time_auc": 0.6501,
+          "time_auc_yes_no_model": 0.6183,
+          "brier": 0.0897,
+          "brier_null": 0.0914
+        },
+        "5y": {
+          "observed_cif": 0.1439,
+          "mean_predicted_cif": 0.1161,
+          "time_auc": 0.662,
+          "time_auc_yes_no_model": 0.6475,
+          "brier": 0.1197,
+          "brier_null": 0.1239
+        }
+      },
+      "time_auc_2y_bootstrap": {
+        "ci95": [
+          0.6298,
+          0.6579
+        ],
+        "difference_ci95": [
+          0.0428,
+          0.0731
+        ]
+      },
+      "calibration_2y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0127,
+          "observed": 0.016,
+          "n": 2255
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.022,
+          "observed": 0.0293,
+          "n": 2254
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0283,
+          "observed": 0.0448,
+          "n": 2254
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.0339,
+          "observed": 0.0528,
+          "n": 2254
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.0396,
+          "observed": 0.0626,
+          "n": 2254
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.0458,
+          "observed": 0.0732,
+          "n": 2254
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.0533,
+          "observed": 0.0799,
+          "n": 2254
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.0629,
+          "observed": 0.0847,
+          "n": 2254
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.0778,
+          "observed": 0.1127,
+          "n": 2254
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.1203,
+          "observed": 0.1158,
+          "n": 2254
+        }
+      ],
+      "calibration_5y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.016,
+          "observed": 0.0182,
+          "n": 2255
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0414,
+          "observed": 0.0537,
+          "n": 2254
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0652,
+          "observed": 0.0856,
+          "n": 2254
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.084,
+          "observed": 0.1158,
+          "n": 2254
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.1012,
+          "observed": 0.1415,
+          "n": 2254
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.1181,
+          "observed": 0.1783,
+          "n": 2254
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.1357,
+          "observed": 0.1903,
+          "n": 2254
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.1567,
+          "observed": 0.2098,
+          "n": 2254
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.1863,
+          "observed": 0.213,
+          "n": 2254
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.2568,
+          "observed": 0.2329,
+          "n": 2254
+        }
+      ]
+    }
+  },
+  "incidence_by_start_cohort": [
+    {
+      "start_years": "2008-2010",
+      "n": 15112,
+      "still_running": 0.007,
+      "terminated_1y": 0.0293,
+      "terminated_2y": 0.0625,
+      "terminated_5y": 0.122
+    },
+    {
+      "start_years": "2011-2012",
+      "n": 10169,
+      "still_running": 0.012,
+      "terminated_1y": 0.0214,
+      "terminated_2y": 0.0518,
+      "terminated_5y": 0.1124
+    },
+    {
+      "start_years": "2013-2014",
+      "n": 10426,
+      "still_running": 0.023,
+      "terminated_1y": 0.0202,
+      "terminated_2y": 0.0505,
+      "terminated_5y": 0.1143
+    },
+    {
+      "start_years": "2015-2016",
+      "n": 10694,
+      "still_running": 0.047,
+      "terminated_1y": 0.0223,
+      "terminated_2y": 0.057,
+      "terminated_5y": 0.1199
+    },
+    {
+      "start_years": "2017-2018",
+      "n": 11043,
+      "still_running": 0.092,
+      "terminated_1y": 0.0229,
+      "terminated_2y": 0.0598,
+      "terminated_5y": 0.1347
+    },
+    {
+      "start_years": "2019-2020",
+      "n": 11498,
+      "still_running": 0.168,
+      "terminated_1y": 0.0356,
+      "terminated_2y": 0.0743,
+      "terminated_5y": 0.1527
+    }
+  ],
+  "recalibration": {
+    "lag_years": 1.7,
+    "window_years": 3.0,
+    "horizon_years": 2.0,
+    "by_calendar_year": [
+      {
+        "year": 2015,
+        "periods_at_risk": 5273,
+        "terminated_observed_over_expected": 0.85,
+        "completed_observed_over_expected": 1.006
+      },
+      {
+        "year": 2016,
+        "periods_at_risk": 14006,
+        "terminated_observed_over_expected": 1.158,
+        "completed_observed_over_expected": 0.966
+      },
+      {
+        "year": 2017,
+        "periods_at_risk": 20450,
+        "terminated_observed_over_expected": 1.159,
+        "completed_observed_over_expected": 0.986
+      },
+      {
+        "year": 2018,
+        "periods_at_risk": 25623,
+        "terminated_observed_over_expected": 1.126,
+        "completed_observed_over_expected": 0.949
+      },
+      {
+        "year": 2019,
+        "periods_at_risk": 29657,
+        "terminated_observed_over_expected": 1.095,
+        "completed_observed_over_expected": 0.988
+      },
+      {
+        "year": 2020,
+        "periods_at_risk": 32212,
+        "terminated_observed_over_expected": 1.175,
+        "completed_observed_over_expected": 0.885
+      },
+      {
+        "year": 2021,
+        "periods_at_risk": 36426,
+        "terminated_observed_over_expected": 1.175,
+        "completed_observed_over_expected": 0.884
+      },
+      {
+        "year": 2022,
+        "periods_at_risk": 38893,
+        "terminated_observed_over_expected": 1.292,
+        "completed_observed_over_expected": 0.857
+      },
+      {
+        "year": 2023,
+        "periods_at_risk": 39294,
+        "terminated_observed_over_expected": 1.265,
+        "completed_observed_over_expected": 0.887
+      },
+      {
+        "year": 2024,
+        "periods_at_risk": 40535,
+        "terminated_observed_over_expected": 1.258,
+        "completed_observed_over_expected": 0.864
+      },
+      {
+        "year": 2025,
+        "periods_at_risk": 44579,
+        "terminated_observed_over_expected": 0.958,
+        "completed_observed_over_expected": 0.709
+      },
+      {
+        "year": 2026,
+        "periods_at_risk": 23763,
+        "terminated_observed_over_expected": 0.754,
+        "completed_observed_over_expected": 0.632
+      }
+    ],
+    "backtest": [
+      {
+        "landmark": "2019-01-01",
+        "fit_window": [
+          "2014-04-20",
+          "2017-04-20"
+        ],
+        "fit_periods": 24319,
+        "params": [
+          -0.757,
+          0.774,
+          -0.012,
+          1.026
+        ],
+        "running": 12896,
+        "observed": 0.0813,
+        "predicted_as_learned": 0.0756,
+        "predicted_recalibrated": 0.0781,
+        "time_auc": 0.5918,
+        "calibration": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0291,
+            "observed": 0.0333,
+            "n": 1290
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0445,
+            "observed": 0.0558,
+            "n": 1290
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0534,
+            "observed": 0.0721,
+            "n": 1290
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0614,
+            "observed": 0.0682,
+            "n": 1290
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0692,
+            "observed": 0.0729,
+            "n": 1290
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0774,
+            "observed": 0.0845,
+            "n": 1290
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0869,
+            "observed": 0.1024,
+            "n": 1289
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.0976,
+            "observed": 0.1047,
+            "n": 1289
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1126,
+            "observed": 0.1047,
+            "n": 1289
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1493,
+            "observed": 0.1148,
+            "n": 1289
+          }
+        ],
+        "calibration_as_learned": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0222,
+            "observed": 0.0364,
+            "n": 1290
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0358,
+            "observed": 0.0527,
+            "n": 1290
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0448,
+            "observed": 0.0698,
+            "n": 1290
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0533,
+            "observed": 0.069,
+            "n": 1290
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.062,
+            "observed": 0.0713,
+            "n": 1290
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.072,
+            "observed": 0.0899,
+            "n": 1290
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0837,
+            "observed": 0.097,
+            "n": 1289
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.0971,
+            "observed": 0.1094,
+            "n": 1289
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1169,
+            "observed": 0.1055,
+            "n": 1289
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1683,
+            "observed": 0.1125,
+            "n": 1289
+          }
+        ],
+        "time_auc_yes_no_model": 0.5623
+      },
+      {
+        "landmark": "2020-01-01",
+        "fit_window": [
+          "2015-04-20",
+          "2018-04-20"
+        ],
+        "fit_periods": 46517,
+        "params": [
+          -0.64,
+          0.788,
+          -0.011,
+          1.029
+        ],
+        "running": 14263,
+        "observed": 0.0878,
+        "predicted_as_learned": 0.0769,
+        "predicted_recalibrated": 0.0844,
+        "time_auc": 0.5832,
+        "calibration": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.032,
+            "observed": 0.0441,
+            "n": 1427
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0492,
+            "observed": 0.0694,
+            "n": 1427
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0585,
+            "observed": 0.0589,
+            "n": 1427
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0668,
+            "observed": 0.0926,
+            "n": 1426
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.075,
+            "observed": 0.0764,
+            "n": 1426
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0835,
+            "observed": 0.0926,
+            "n": 1426
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0932,
+            "observed": 0.0947,
+            "n": 1426
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.1047,
+            "observed": 0.1066,
+            "n": 1426
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1207,
+            "observed": 0.1213,
+            "n": 1426
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1602,
+            "observed": 0.122,
+            "n": 1426
+          }
+        ],
+        "calibration_as_learned": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0233,
+            "observed": 0.0385,
+            "n": 1427
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0377,
+            "observed": 0.0659,
+            "n": 1427
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0468,
+            "observed": 0.0715,
+            "n": 1427
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0552,
+            "observed": 0.087,
+            "n": 1426
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0639,
+            "observed": 0.0842,
+            "n": 1426
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0734,
+            "observed": 0.0912,
+            "n": 1426
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0845,
+            "observed": 0.0912,
+            "n": 1426
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.098,
+            "observed": 0.1059,
+            "n": 1426
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1176,
+            "observed": 0.1171,
+            "n": 1426
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.169,
+            "observed": 0.1262,
+            "n": 1426
+          }
+        ],
+        "time_auc_yes_no_model": 0.536
+      },
+      {
+        "landmark": "2021-01-01",
+        "fit_window": [
+          "2016-04-20",
+          "2019-04-21"
+        ],
+        "fit_periods": 65516,
+        "params": [
+          -0.788,
+          0.747,
+          -0.009,
+          1.025
+        ],
+        "running": 16049,
+        "observed": 0.0919,
+        "predicted_as_learned": 0.076,
+        "predicted_recalibrated": 0.0831,
+        "time_auc": 0.6021,
+        "calibration": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0318,
+            "observed": 0.0343,
+            "n": 1605
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0491,
+            "observed": 0.0604,
+            "n": 1605
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.059,
+            "observed": 0.0704,
+            "n": 1605
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0672,
+            "observed": 0.0798,
+            "n": 1605
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0754,
+            "observed": 0.0879,
+            "n": 1605
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0834,
+            "observed": 0.1022,
+            "n": 1605
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0921,
+            "observed": 0.1196,
+            "n": 1605
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.1025,
+            "observed": 0.1146,
+            "n": 1605
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1172,
+            "observed": 0.1171,
+            "n": 1605
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1528,
+            "observed": 0.1328,
+            "n": 1604
+          }
+        ],
+        "calibration_as_learned": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0222,
+            "observed": 0.0361,
+            "n": 1605
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0365,
+            "observed": 0.0592,
+            "n": 1605
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.046,
+            "observed": 0.0723,
+            "n": 1605
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0548,
+            "observed": 0.0773,
+            "n": 1605
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0638,
+            "observed": 0.0829,
+            "n": 1605
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0732,
+            "observed": 0.1078,
+            "n": 1605
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0839,
+            "observed": 0.1227,
+            "n": 1605
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.097,
+            "observed": 0.1059,
+            "n": 1605
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1163,
+            "observed": 0.1121,
+            "n": 1605
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1665,
+            "observed": 0.1428,
+            "n": 1604
+          }
+        ],
+        "time_auc_yes_no_model": 0.5624
+      },
+      {
+        "landmark": "2022-01-01",
+        "fit_window": [
+          "2017-04-20",
+          "2020-04-20"
+        ],
+        "fit_periods": 79876,
+        "params": [
+          -0.851,
+          0.729,
+          -0.018,
+          1.021
+        ],
+        "running": 16967,
+        "observed": 0.0998,
+        "predicted_as_learned": 0.0752,
+        "predicted_recalibrated": 0.0821,
+        "time_auc": 0.5947,
+        "calibration": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0318,
+            "observed": 0.0454,
+            "n": 1697
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0493,
+            "observed": 0.0636,
+            "n": 1697
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0589,
+            "observed": 0.0801,
+            "n": 1697
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0671,
+            "observed": 0.0884,
+            "n": 1697
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0748,
+            "observed": 0.1055,
+            "n": 1697
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0827,
+            "observed": 0.1014,
+            "n": 1697
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0911,
+            "observed": 0.109,
+            "n": 1697
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.1011,
+            "observed": 0.1291,
+            "n": 1696
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1153,
+            "observed": 0.1274,
+            "n": 1696
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1489,
+            "observed": 0.1486,
+            "n": 1696
+          }
+        ],
+        "calibration_as_learned": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.022,
+            "observed": 0.0519,
+            "n": 1697
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0361,
+            "observed": 0.0613,
+            "n": 1697
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0454,
+            "observed": 0.0819,
+            "n": 1697
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0542,
+            "observed": 0.0925,
+            "n": 1697
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0631,
+            "observed": 0.0996,
+            "n": 1697
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0725,
+            "observed": 0.1002,
+            "n": 1697
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.083,
+            "observed": 0.1043,
+            "n": 1697
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.0961,
+            "observed": 0.1226,
+            "n": 1696
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1148,
+            "observed": 0.125,
+            "n": 1696
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1646,
+            "observed": 0.1592,
+            "n": 1696
+          }
+        ],
+        "time_auc_yes_no_model": 0.553
+      },
+      {
+        "landmark": "2023-01-01",
+        "fit_window": [
+          "2018-04-20",
+          "2021-04-20"
+        ],
+        "fit_periods": 90872,
+        "params": [
+          -1.235,
+          0.614,
+          -0.166,
+          0.95
+        ],
+        "running": 17016,
+        "observed": 0.1027,
+        "predicted_as_learned": 0.0748,
+        "predicted_recalibrated": 0.0844,
+        "time_auc": 0.5935,
+        "calibration": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0383,
+            "observed": 0.0499,
+            "n": 1702
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0561,
+            "observed": 0.064,
+            "n": 1702
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0651,
+            "observed": 0.077,
+            "n": 1702
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0724,
+            "observed": 0.0922,
+            "n": 1702
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.079,
+            "observed": 0.1046,
+            "n": 1702
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.0858,
+            "observed": 0.1099,
+            "n": 1702
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0933,
+            "observed": 0.1223,
+            "n": 1701
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.1017,
+            "observed": 0.1323,
+            "n": 1701
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1132,
+            "observed": 0.1264,
+            "n": 1701
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.139,
+            "observed": 0.1481,
+            "n": 1701
+          }
+        ],
+        "calibration_as_learned": [
+          {
+            "bin": 0,
+            "mean_predicted": 0.0223,
+            "observed": 0.0593,
+            "n": 1702
+          },
+          {
+            "bin": 1,
+            "mean_predicted": 0.0366,
+            "observed": 0.064,
+            "n": 1702
+          },
+          {
+            "bin": 2,
+            "mean_predicted": 0.0458,
+            "observed": 0.0846,
+            "n": 1702
+          },
+          {
+            "bin": 3,
+            "mean_predicted": 0.0542,
+            "observed": 0.0823,
+            "n": 1702
+          },
+          {
+            "bin": 4,
+            "mean_predicted": 0.0627,
+            "observed": 0.0958,
+            "n": 1702
+          },
+          {
+            "bin": 5,
+            "mean_predicted": 0.072,
+            "observed": 0.1116,
+            "n": 1702
+          },
+          {
+            "bin": 6,
+            "mean_predicted": 0.0824,
+            "observed": 0.117,
+            "n": 1701
+          },
+          {
+            "bin": 7,
+            "mean_predicted": 0.0958,
+            "observed": 0.1299,
+            "n": 1701
+          },
+          {
+            "bin": 8,
+            "mean_predicted": 0.1144,
+            "observed": 0.127,
+            "n": 1701
+          },
+          {
+            "bin": 9,
+            "mean_predicted": 0.1616,
+            "observed": 0.1552,
+            "n": 1701
+          }
+        ],
+        "time_auc_yes_no_model": 0.556
+      }
+    ],
+    "serving": {
+      "fit_window": [
+        "2022-01-13",
+        "2025-01-13"
+      ],
+      "fit_periods": 118827,
+      "params": [
+        -0.98,
+        0.657,
+        -0.213,
+        0.983
+      ]
+    }
+  }
+}

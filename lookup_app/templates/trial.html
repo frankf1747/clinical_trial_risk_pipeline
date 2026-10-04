@@ -28,8 +28,9 @@
     given it has been running {{ "%.1f"|format(t.years_running) }} years{% endif %}{% if t.next_2y_percentile is not none %}: higher than
     {{ "%.0f"|format([t.next_2y_percentile, 99]|min) }}% of running trials over the same window{% endif %}.</span></div>
   <p class="small muted" style="margin-bottom:0">From the competing-risks survival model (termination vs completion,
-  still-running trials censored). It ranks well, but it was fit to trials that started 2008–2014, and termination
-  risk has risen since. Read the percentage as a lower bound.</p>
+  still-running trials censored), fit to trials that started 2008–2014 and recalibrated to termination rates over
+  2022–2024, since termination has become more common. Checked on past years, it still ran a little low when the
+  rise continued.</p>
 </div>
 {% endif %}
 

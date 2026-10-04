@@ -11,6 +11,10 @@ from the same features as the yes/no model plus the period index. From those haz
 
 Running trials count as at risk for the periods they were observed, so they inform the model instead of
 being dropped, and nothing about the end date enters the features.
+
+`recalibration` maps the log-odds of terminating and of completing (vs still running) in every period
+through an intercept and a slope each; it is fit afterwards on recent calendar time (ctrisk.ml.recalibrate)
+so the probabilities reflect today's level of risk. IDENTITY leaves the hazards as learned.
 """
 import datetime as dt
 
@@ -41,6 +45,22 @@ def durations(frame: pd.DataFrame) -> pd.DataFrame:
     return out[keep]
 
 
+IDENTITY = (0.0, 1.0, 0.0, 1.0)         # intercept, slope for terminating; intercept, slope for completing
+
+
+def recalibrated(h: np.ndarray, params=IDENTITY) -> np.ndarray:
+    """Hazards (..., 3) with log(P(terminated) / P(running)) -> a1 + b1 * it, and the same for completed."""
+    a1, b1, a2, b2 = params
+    if np.array_equal(params, IDENTITY):
+        return h
+    log_run = np.log(np.maximum(h[..., 0], 1e-12))
+    z1 = np.log(np.maximum(h[..., 1], 1e-12)) - log_run
+    z2 = np.log(np.maximum(h[..., 2], 1e-12)) - log_run
+    logits = np.stack([np.zeros_like(z1), a1 + b1 * z1, a2 + b2 * z2], axis=-1)
+    w = np.exp(logits - logits.max(axis=-1, keepdims=True))
+    return w / w.sum(axis=-1, keepdims=True)
+
+
 def expand(time: np.ndarray, event: np.ndarray, width: float = WIDTH, periods: int = PERIODS):
     """Person-period rows: (trial position, period, outcome in that period: 0 none, 1 terminated, 2 completed).
     A censored trial contributes only the periods it was observed in full."""
@@ -65,6 +85,7 @@ class SurvivalModel:
         self.width, self.periods = width, periods
         self.categories: dict | None = None
         self.lgbm: lgb.LGBMClassifier | None = None
+        self.recalibration = IDENTITY
 
     def _base(self, frame: pd.DataFrame) -> pd.DataFrame:
         X, learned = to_matrix(frame.reset_index(drop=True), self.columns, self.categories)
@@ -98,15 +119,16 @@ class SurvivalModel:
     def best_iteration(self) -> int:
         return self.lgbm.best_iteration_ or self.params["n_estimators"]
 
-    def hazards(self, frame: pd.DataFrame, chunk: int = 4000) -> np.ndarray:
-        """(trials, periods, 3): P(still running, terminated, completed) in each period, if at risk in it."""
+    def hazards(self, frame: pd.DataFrame, chunk: int = 4000, raw: bool = False) -> np.ndarray:
+        """(trials, periods, 3): P(still running, terminated, completed) in each period, if at risk in it.
+        raw=True: as learned, without the recalibration."""
         X = self._base(frame)
         out = np.empty((len(X), self.periods, 3))
         for lo in range(0, len(X), chunk):
             idx = np.arange(lo, min(lo + chunk, len(X)))
             rows, period = np.repeat(idx, self.periods), np.tile(np.arange(self.periods), len(idx))
             out[idx] = self.lgbm.predict_proba(self._periods(X, rows, period)).reshape(len(idx), self.periods, 3)
-        return out
+        return out if raw else recalibrated(out, getattr(self, "recalibration", IDENTITY))   # older pickles: none
 
     @staticmethod
     def _incidence(h: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

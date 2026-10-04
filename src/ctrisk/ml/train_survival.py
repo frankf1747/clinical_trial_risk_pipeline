@@ -3,7 +3,9 @@
 Fit: 2008-2014 starts, finished (terminated or completed, with their durations) and still running
 (censored at the snapshot). Tuning: fit on starts before 2013, validate on 2013-2014. Test: 2015-2016
 starts (follow-up nearly complete) and 2017-2020 starts (heavily censored). Compared on the same trials
-with vN's yes/no score. Saved to models/survival/sN/, apart from the yes/no versions.
+with vN's yes/no score. Then recalibrated to recent calendar time on trials that started 2015 or later
+(ctrisk.ml.recalibrate), backtested at landmark dates. Saved to models/survival/sN/, apart from the yes/no
+versions.
 """
 import json
 import subprocess
@@ -13,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ctrisk.ml.recalibrate import recalibrate
 from ctrisk.ml.registry import MODELS_DIR, latest, load, next_version, save
 from ctrisk.ml.survival import PERIODS, WIDTH, SurvivalModel, durations
 from ctrisk.ml.survival_eval import (
@@ -114,6 +117,8 @@ def run(frame: pd.DataFrame, columns: list[str], yes_no_model, grid=GRID, text_m
     for name, (lo, hi) in COHORTS.items():
         c = pop[(pop["start"] >= lo) & (pop["start"] < hi)]
         report["cohorts"][name] = evaluate(model, fit, c, yes_no_model.predict_proba(c))
+    later = pop[pop["start"] >= FIT_END]                                   # none of these fit the hazards
+    report["recalibration"] = recalibrate(model, later, yes_no=yes_no_model.predict_proba(later))
     return model, report
 
 
@@ -129,7 +134,7 @@ if __name__ == "__main__":
     with connect() as conn:
         run_files(conn.cursor(), [SQL_DIR / "50_outcomes.sql"])
         frame = conn.cursor().execute(f"SELECT f.*, o.end_date FROM {clone} f "
-                                      "LEFT JOIN TRIAL_OUTCOMES o ON o.nct_id = f.nct_id").fetch_pandas_all()
+                                      "LEFT JOIN TRIAL_OUTCOMES o ON o.nct_id = f.nct_id ORDER BY f.nct_id").fetch_pandas_all()
     frame.columns = frame.columns.str.lower()
     model, report = run(frame.reset_index(drop=True), columns, models["label"])
     sv = next_version(SURVIVAL_DIR)
@@ -144,5 +149,10 @@ if __name__ == "__main__":
                   f"Brier {m['brier']} vs null {m['brier_null']}, CIF predicted {m['mean_predicted_cif']} "
                   f"observed {m['observed_cif']}")
         print("  2y bootstrap:", r["time_auc_2y_bootstrap"])
+    for b in report["recalibration"]["backtest"]:
+        print(f"== running at {b['landmark']}: {b['running']} trials, next-2y observed {b['observed']}, predicted "
+              f"{b['predicted_as_learned']} as learned, {b['predicted_recalibrated']} recalibrated; time-AUC "
+              f"{b['time_auc']} (yes/no model {b.get('time_auc_yes_no_model')})")
+    print("serving recalibration:", report["recalibration"]["serving"])
     print(f"saved {folder}  ({Path(folder).name}, params {report['params']})")
     print(json.dumps(report["grid"]))

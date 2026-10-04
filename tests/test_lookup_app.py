@@ -95,7 +95,7 @@ def test_home_page_states_the_validated_numbers(client):
 def test_running_trials_show_the_next_two_years_and_finished_ones_do_not(client):
     running = client.get("/trial/NCT03801083").text
     assert "next 2 years" in running and "8%" in running and "3.2 years" in running and "88%" in running
-    assert "lower bound" in running
+    assert "recalibrated to termination rates" in running
     assert "next 2 years" not in client.get("/trial/NCT00000001").text
 
 

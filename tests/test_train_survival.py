@@ -38,3 +38,6 @@ def test_run_fits_on_pre_2015_starts_and_reports_both_cohorts(monkeypatch):
     assert len(report["cohorts"]["recent"]["calibration_2y"]) == 10
     trend = report["incidence_by_start_cohort"]
     assert trend[0]["start_years"] == "2008-2010" and 0 < trend[0]["terminated_2y"] < trend[0]["terminated_5y"] < 1
+    recal = report["recalibration"]
+    assert recal["backtest"] and all("time_auc_yes_no_model" in b for b in recal["backtest"])
+    assert len(recal["serving"]["params"]) == 4

@@ -157,7 +157,7 @@ if __name__ == "__main__":
     models, docs = load(MODELS_DIR, version)
     model, clone = models["label"], docs["manifest"]["snowflake_clone"]
     with connect() as conn:          # the frozen rows this version was evaluated on
-        frame = conn.cursor().execute(f"SELECT * FROM {clone} WHERE split = 'recent'").fetch_pandas_all()
+        frame = conn.cursor().execute(f"SELECT * FROM {clone} WHERE split = 'recent' ORDER BY nct_id").fetch_pandas_all()
     frame.columns = frame.columns.str.lower()
     pit = pd.read_parquet(cfg.path("parquet_pit", "registry_at_start"))   # local parquet (MODE=local)
     if getattr(model, "embed", None):     # M9: the archived text's embedding replaces the latest one

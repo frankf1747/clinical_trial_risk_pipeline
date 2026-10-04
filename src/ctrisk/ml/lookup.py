@@ -139,7 +139,7 @@ if __name__ == "__main__":
     models, docs = load(MODELS_DIR, version)
     clone = docs["manifest"]["snowflake_clone"]          # the rows this version was trained and tested on
     with connect() as conn:
-        frame = conn.cursor().execute(f"SELECT * FROM {clone}").fetch_pandas_all()
+        frame = conn.cursor().execute(f"SELECT * FROM {clone} ORDER BY nct_id").fetch_pandas_all()
         frame.columns = frame.columns.str.lower()
         frame = frame.reset_index(drop=True)
         if getattr(models["label"], "embed", None):                # M9 models read text embeddings too

@@ -86,3 +86,24 @@ def test_survival_card_reports_time_auc_comparison_calibration_and_trend():
     assert "| 2015–2016 starts | 2y | 0.646 | 0.614 |" in text
     assert "+0.009 to +0.054" in text
     assert "| 2019-2020 | 11,498 | 16.8% | 3.6% | 7.4% | 15.3% |" in text
+    assert "lower bound" in text and "Recalibration to today's risk" not in text      # v1 was not recalibrated
+
+
+def test_survival_card_reports_the_recalibration_and_its_landmark_backtest():
+    from ctrisk.ml.report import survival_card
+    folder = Path(__file__).resolve().parents[1] / "models" / "survival" / "v1"
+    metrics, manifest = (json.loads((folder / f"{n}.json").read_text()) for n in ("metrics", "manifest"))
+    deciles = [{"bin": b, "mean_predicted": 0.02 * (b + 1), "observed": 0.03 * (b + 1), "n": 100} for b in range(10)]
+    metrics["recalibration"] = {
+        "lag_years": 1.7, "window_years": 3.0, "horizon_years": 2.0,
+        "by_calendar_year": [{"year": 2022, "periods_at_risk": 38893, "terminated_observed_over_expected": 1.317,
+                              "completed_observed_over_expected": 0.863}],
+        "backtest": [{"landmark": "2023-01-01", "running": 17016, "observed": 0.1027, "predicted_as_learned": 0.0736,
+                      "predicted_recalibrated": 0.0841, "time_auc": 0.5922, "time_auc_yes_no_model": 0.556,
+                      "calibration": deciles, "calibration_as_learned": deciles}],
+        "serving": {"fit_window": ["2022-01-13", "2025-01-13"], "fit_periods": 118827, "params": [-1.1, 0.65, -0.15, 0.95]}}
+    text = survival_card(metrics, manifest)
+    assert "the served model is recalibrated for that" in text and "lower bound" not in text
+    assert "| 2022 | 38,893 | 1.32 | 0.86 |" in text
+    assert "terminating -1.10 + 0.65 × learned log-odds" in text
+    assert "| 2023-01-01 | 17,016 | 10.3% | 7.4% | 8.4% | 0.592 | 0.556 |" in text

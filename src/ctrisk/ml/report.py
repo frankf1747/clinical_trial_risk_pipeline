@@ -227,6 +227,44 @@ def _latest_backtest(models_dir: Path) -> dict | None:
 COHORT_NAMES = {"test": "2015–2016 starts", "recent": "2017–2020 starts"}
 
 
+def _recalibration(r: dict) -> list[str]:
+    """The survival card's section on recalibrating to recent calendar time, and its landmark backtest."""
+    a1, b1, a2, b2 = r["serving"]["params"]
+    out = ["## Recalibration to today's risk", "",
+           ("Trials that started 2015 or later (none used to fit the hazards), by the calendar year of each 6-month "
+            "period they were at risk in, as learned:"), ""]
+    out += _table(["Calendar year", "Periods at risk", "Terminated, observed / expected", "Completed, observed / expected"],
+                  [[x["year"], f"{x['periods_at_risk']:,}", f"{x['terminated_observed_over_expected']:.2f}",
+                    f"{x['completed_observed_over_expected']:.2f}"] for x in r["by_calendar_year"] if x["year"] >= 2016])
+    out += [("Terminations have run above expectation since 2016, and further above it since 2020. In the most recent "
+             "calendar years completions fall short as well: that is reporting lag (sponsors record that a trial ended "
+             f"months later), not lower risk, so the last {r['lag_years']:g} years before the snapshot are left out."), "",
+            (f"The per-period log-odds of terminating (vs still running) are mapped through an intercept and a slope, "
+             f"and the same for completing, fit by maximum likelihood on the {r['window_years']:g} calendar years "
+             f"{r['serving']['fit_window'][0]} to {r['serving']['fit_window'][1]} ({r['serving']['fit_periods']:,} "
+             f"person-periods). Served: terminating {a1:+.2f} + {b1:.2f} × learned log-odds; completing {a2:+.2f} + "
+             f"{b2:.2f} × learned log-odds. A slope below 1 means the learned termination risks were too spread out."), "",
+            ("**Backtest, as the lookup uses it.** At each landmark date, the trials then running (at most 6 years in) get "
+             f"their probability of termination in the next {r['horizon_years']:g} years, recalibrated only on calendar "
+             f"time ending {r['lag_years']:g} years before the landmark, and are compared with what happened to them:"), ""]
+    out += _table(["Landmark", "Running trials", "Observed", "Predicted, as learned", "Predicted, recalibrated",
+                   "Time-AUC", "Yes/no model time-AUC"],
+                  [[b["landmark"], f"{b['running']:,}", _pct(b["observed"]), _pct(b["predicted_as_learned"]),
+                    _pct(b["predicted_recalibrated"]), f"{b['time_auc']:.3f}",
+                    f"{b['time_auc_yes_no_model']:.3f}" if "time_auc_yes_no_model" in b else "–"] for b in r["backtest"]])
+    last = r["backtest"][-1]
+    out += [f"By decile of predicted risk, trials running at {last['landmark']}:", ""]
+    out += _table(["Decile", "As learned", "Recalibrated", "Observed"],
+                  [[c["bin"] + 1, _pct(u["mean_predicted"]), _pct(c["mean_predicted"]), _pct(c["observed"])]
+                   for c, u in zip(last["calibration"], last["calibration_as_learned"], strict=True)])
+    out += [("Recalibration narrows the gap in the average and corrects most of the spread: the riskiest tenth is no "
+             "longer overstated and the safest no longer understated by half. Predictions still run low, increasingly so "
+             "at later landmarks, because risk kept rising during the reporting-lag gap. Ranking running trials is harder "
+             "than ranking trials from their start, though the survival model still ranks them better than the yes/no "
+             "model."), ""]
+    return out
+
+
 def survival_card(metrics: dict, manifest: dict) -> str:
     """The competing-risks model's report, generated from models/survival/vN/ like the main card."""
     v = f"survival v{manifest['version']}"
@@ -265,10 +303,13 @@ def survival_card(metrics: dict, manifest: dict) -> str:
     out += _table(["Cohort", "By", "Predicted", "Observed"],
                   [[COHORT_NAMES.get(n, n), hz, _pct(m["mean_predicted_cif"]), _pct(m["observed_cif"])]
                    for n, c in metrics["cohorts"].items() for hz, m in c["by_horizon"].items()])
-    out += [("The model is fit to 2008–2014 starts and understates termination for later ones, because the "
-             "risk itself rose (below). Its rankings hold up; its absolute probabilities are a lower bound for "
-             "trials running now."), "",
-            "## Termination risk by start cohort", "",
+    recal = metrics.get("recalibration")
+    out += [("These are the hazards as learned from 2008–2014 starts. They understate termination for later starts, "
+             "because the risk itself rose (below)" + (": the served model is recalibrated for that (next section)."
+                                                       if recal else "; read them as a lower bound for trials running now.")), ""]
+    if recal:
+        out += _recalibration(recal)
+    out += ["## Termination risk by start cohort", "",
             "Censoring-adjusted (Aalen–Johansen) probability of termination, no model involved:", ""]
     out += _table(["Start years", "Trials", "Still running", "Within 1 year", "Within 2 years", "Within 5 years"],
                   [[r["start_years"], f"{r['n']:,}", _pct(r["still_running"]), _pct(r["terminated_1y"]),
