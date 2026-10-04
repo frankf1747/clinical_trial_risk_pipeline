@@ -9,6 +9,7 @@ Each openFDA file is a single JSON document ({"meta":..., "results":[...]}), so 
 streams one zip with ijson instead of loading it whole.
 """
 import io
+import os
 import zipfile
 from collections.abc import Iterator
 
@@ -67,7 +68,8 @@ if __name__ == "__main__":
     cfg = load_config()
     spark = get_spark("flatten_faers", cfg.mode)
     out = cfg.path("parquet", "faers_drug_events")
-    build_drug_events(spark, cfg.path("raw", "faers", "*", "*.zip")).write.mode("overwrite").parquet(out)
+    raw = os.getenv("FAERS_RAW", "raw/faers")              # raw/faers_full: the whole history, ingested in the cloud
+    build_drug_events(spark, cfg.path(*raw.split("/"), "*", "*.zip")).write.mode("overwrite").parquet(out)
     events = spark.read.parquet(out)
     print({"rows": events.count(),
            "reports": events.select("safetyreportid").distinct().count(),

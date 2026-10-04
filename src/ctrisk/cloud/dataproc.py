@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[3]
 RUNTIME = "2.2"                    # Spark 3.5, like the local pyspark pin
 DCU_PER_NODE = 4                   # driver and each executor: 4 vCPU = 4 DCUs
 USD_PER_DCU_HOUR = 0.06            # Dataproc Serverless standard compute, us-central1 list price
-PASSED_ENV = ("MIN_TRIALS", "MIN_MATCH_RATE", "FAERS_YEARS", "FAERS_QUARTERS")
+PASSED_ENV = ("MIN_TRIALS", "MIN_MATCH_RATE", "FAERS_YEARS", "FAERS_QUARTERS", "FAERS_RAW")
 ENTRY = "import runpy, sys\nsys.argv = sys.argv[1:]\nrunpy.run_module(sys.argv[0], run_name='__main__')\n"
 
 
@@ -81,7 +81,8 @@ if __name__ == "__main__":
           f"${estimate_usd(max_executors, 30)} per 30 minutes")
     code, entry = ((["gs://BUCKET/code/ctrisk.zip", "gs://BUCKET/code/deps.zip"], "gs://BUCKET/code/run_module.py")
                    if dry else upload_code(bucket))
-    cmd = batch_command(module, bucket, region, code, entry, env, batch_id, max_executors)
+    cmd = batch_command(module, bucket, region, code, entry, env, batch_id, max_executors,
+                        ttl=os.getenv("DATAPROC_TTL", "2h"))
     print(" ".join(cmd))
     if not dry:
         subprocess.run(cmd, check=True)

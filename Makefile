@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: survival lookup publish upload-raw deploy setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
+.PHONY: ingest-faers-cloud survival lookup publish upload-raw deploy setup test ingest-aact ingest-faers trials faers match check-faers attributes text upload warehouse train score \
 	dashboard audit-build audit backtest report m6
 
 setup:
@@ -45,6 +45,15 @@ upload:
 	gcloud storage rsync --recursive --delete-unmatched-destination-objects \
 	  --exclude='.*\.crc$$|.*_SUCCESS$$|^drug_interventions/.*' \
 	  data/parquet gs://$(strip $(GCP_BUCKET))/parquet
+
+# M10: the full FAERS history (~110 GB) copied from openFDA into gs://$GCP_BUCKET/raw/faers_full/ by a Cloud Run
+# Job (24 parallel tasks, no laptop bandwidth); a rerun copies only what is missing. Then:
+#   make faers match MODE=cloud FAERS_RAW=raw/faers_full DATAPROC_MAX_EXECUTORS=7 DATAPROC_TTL=6h
+ingest-faers-cloud:
+	gcloud run jobs deploy ctrisk-faers-ingest --source ingest_job --region $(or $(strip $(GCP_REGION)),us-central1) \
+	  --tasks 24 --parallelism 24 --task-timeout 2h --max-retries 3 --cpu 1 --memory 1Gi \
+	  --set-env-vars BUCKET=$(strip $(GCP_BUCKET)),PREFIX=raw/faers_full
+	gcloud run jobs execute ctrisk-faers-ingest --region $(or $(strip $(GCP_REGION)),us-central1) --wait
 
 # Raw inputs for cloud-mode Spark (once, and after a new AACT snapshot): AACT tables and FAERS zips (~18 GB)
 upload-raw:

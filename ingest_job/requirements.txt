@@ -1,0 +1,2 @@
+requests==2.32.*
+google-cloud-storage==3.16.0
