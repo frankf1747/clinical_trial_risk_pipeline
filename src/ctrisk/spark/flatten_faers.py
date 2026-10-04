@@ -60,8 +60,28 @@ def build_drug_events(spark: SparkSession, zip_glob: str) -> DataFrame:
                  F.max("serious").alias("serious"), F.max("death").alias("death"),
                  F.max("suspect").alias("suspect"), F.max("harmonized").alias("harmonized"),
                  F.max("active_substance").alias("active_substance"))
-            .withColumn("receivedate", F.to_date("receivedate", "yyyyMMdd"))
-            .withColumn("receiptdate", F.to_date("receiptdate", "yyyyMMdd")))
+            .withColumn("receivedate", valid_date("receivedate"))
+            .withColumn("receiptdate", valid_date("receiptdate")))
+
+
+def valid_date(col: str):
+    """yyyyMMdd -> date, or null when impossible: FDA adverse-event reporting began in 1969, and the full
+    history holds typos such as year 0001, which Spark also refuses to write to Parquet."""
+    d = F.to_date(col, "yyyyMMdd")
+    return F.when((d >= F.lit("1960-01-01")) & (d <= F.current_date()), d)
+
+
+def publish(spark: SparkSession, df: DataFrame, out: str) -> None:
+    """Write to out__incoming, then swap it in, so a failed run never leaves `out` emptied or partial
+    (mode("overwrite") deletes the old output before writing the new one)."""
+    incoming = out + "__incoming"
+    df.write.mode("overwrite").parquet(incoming)
+    jvm = spark.sparkContext._jvm
+    path = jvm.org.apache.hadoop.fs.Path(out)
+    fs = path.getFileSystem(spark.sparkContext._jsc.hadoopConfiguration())
+    fs.delete(path, True)
+    if not fs.rename(jvm.org.apache.hadoop.fs.Path(incoming), path):
+        raise RuntimeError(f"could not move {incoming} to {out}")
 
 
 if __name__ == "__main__":
@@ -69,7 +89,7 @@ if __name__ == "__main__":
     spark = get_spark("flatten_faers", cfg.mode)
     out = cfg.path("parquet", "faers_drug_events")
     raw = os.getenv("FAERS_RAW", "raw/faers")              # raw/faers_full: the whole history, ingested in the cloud
-    build_drug_events(spark, cfg.path(*raw.split("/"), "*", "*.zip")).write.mode("overwrite").parquet(out)
+    publish(spark, build_drug_events(spark, cfg.path(*raw.split("/"), "*", "*.zip")), out)
     events = spark.read.parquet(out)
     print({"rows": events.count(),
            "reports": events.select("safetyreportid").distinct().count(),

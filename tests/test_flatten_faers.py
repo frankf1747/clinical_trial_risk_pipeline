@@ -57,3 +57,24 @@ def test_keeps_latest_report_version_only(spark, tmp_path):
     assert str(rows["9"].receivedate) == "2016-01-07"
     assert str(rows["9"].receiptdate) == "2016-01-07"
     assert rows["10"].substance == "metformin"
+
+
+def test_impossible_report_dates_become_missing_instead_of_breaking_the_write(spark, tmp_path):
+    """The full history has typo dates such as year 0001, which Spark refuses to write to Parquet."""
+    (tmp_path / "2010q1").mkdir()
+    ancient = {**report("11", drugs=[NO_OPENFDA]), "receivedate": "00010101", "receiptdate": "20991231"}
+    write_zip(tmp_path / "2010q1" / "c.zip", [ancient, report("12", drugs=[NO_OPENFDA])])
+    out = build_drug_events(spark, str(tmp_path / "*" / "*.zip"))
+    out.write.mode("overwrite").parquet(str(tmp_path / "out"))               # must not raise
+    rows = {r.safetyreportid: r for r in spark.read.parquet(str(tmp_path / "out")).collect()}
+    assert rows["11"].receivedate is None and rows["11"].receiptdate is None   # before 1960, after today
+    assert str(rows["12"].receivedate) == "2016-01-07"
+
+
+def test_publish_swaps_in_new_output_only_after_it_is_complete(spark, tmp_path):
+    from ctrisk.spark.flatten_faers import publish
+    out = str(tmp_path / "events")
+    spark.createDataFrame([("old",)], "x string").write.parquet(out)
+    publish(spark, spark.createDataFrame([("new",)], "x string"), out)
+    assert [r.x for r in spark.read.parquet(out).collect()] == ["new"]
+    assert not (tmp_path / "events__incoming").exists()
