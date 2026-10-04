@@ -1,9 +1,19 @@
 """The Cloud Run FAERS ingest job's pure parts (no network, no GCS)."""
+import importlib.util
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ingest_job"))
-import main as job
+
+def _load(name: str, path: Path):
+    """Import a folder's main.py under its own name: lookup_app and ingest_job both have a main.py."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+job = _load("ingest_job_main", Path(__file__).resolve().parents[1] / "ingest_job" / "main.py")
 
 PARTS = [{"file": f"https://download.open.fda.gov/drug/event/{q}/drug-event-000{i}-of-0003.json.zip",
           "size_mb": "10.5"} for q in ("2004q1", "2004q2", "2026q1") for i in (1, 2, 3)]

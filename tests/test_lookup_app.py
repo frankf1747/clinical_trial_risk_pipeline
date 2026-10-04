@@ -1,4 +1,5 @@
 """The public lookup app, on a two-trial fixture (no GCS)."""
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -7,8 +8,17 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lookup_app"))
-import main
+
+def _load(name: str, path: Path):
+    """Import a folder's main.py under its own name: lookup_app and ingest_job both have a main.py."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+main = _load("lookup_app_main", Path(__file__).resolve().parents[1] / "lookup_app" / "main.py")
 
 REASONS = [{"feature": "healthy_volunteers", "text": "Accepts healthy volunteers: No (raises risk)", "contribution": 0.19},
            {"feature": "phase", "text": "Phase: 1 (lowers risk)", "contribution": -0.12}]
