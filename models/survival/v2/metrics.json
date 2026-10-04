@@ -1,0 +1,445 @@
+{
+  "params": {
+    "n_estimators": 553,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.8,
+    "random_state": 0,
+    "verbose": -1,
+    "num_leaves": 15,
+    "learning_rate": 0.05,
+    "min_child_samples": 200
+  },
+  "grid": [
+    {
+      "num_leaves": 15,
+      "learning_rate": 0.05,
+      "min_child_samples": 200,
+      "n_estimators": 553,
+      "valid_time_auc_2y": 0.6811
+    },
+    {
+      "num_leaves": 31,
+      "learning_rate": 0.05,
+      "min_child_samples": 200,
+      "n_estimators": 274,
+      "valid_time_auc_2y": 0.6774
+    },
+    {
+      "num_leaves": 63,
+      "learning_rate": 0.05,
+      "min_child_samples": 200,
+      "n_estimators": 153,
+      "valid_time_auc_2y": 0.6682
+    }
+  ],
+  "width_years": 0.5,
+  "periods": 16,
+  "fit": {
+    "n": 35792,
+    "terminated": 4912,
+    "completed": 30333,
+    "censored": 547,
+    "dropped_no_end_date": 1094
+  },
+  "cohorts": {
+    "test": {
+      "n": 10694,
+      "terminated": 1508,
+      "completed": 8681,
+      "censored": 505,
+      "by_horizon": {
+        "1y": {
+          "observed_cif": 0.0223,
+          "mean_predicted_cif": 0.0198,
+          "time_auc": 0.665,
+          "time_auc_yes_no_model": 0.5535,
+          "brier": 0.0217,
+          "brier_null": 0.0219
+        },
+        "2y": {
+          "observed_cif": 0.057,
+          "mean_predicted_cif": 0.0502,
+          "time_auc": 0.6473,
+          "time_auc_yes_no_model": 0.6215,
+          "brier": 0.0531,
+          "brier_null": 0.0538
+        },
+        "3y": {
+          "observed_cif": 0.0861,
+          "mean_predicted_cif": 0.0765,
+          "time_auc": 0.6666,
+          "time_auc_yes_no_model": 0.6562,
+          "brier": 0.0767,
+          "brier_null": 0.0787
+        },
+        "5y": {
+          "observed_cif": 0.1199,
+          "mean_predicted_cif": 0.1137,
+          "time_auc": 0.6871,
+          "time_auc_yes_no_model": 0.6813,
+          "brier": 0.1006,
+          "brier_null": 0.1055
+        }
+      },
+      "time_auc_2y_bootstrap": {
+        "ci95": [
+          0.6287,
+          0.6651
+        ],
+        "difference_ci95": [
+          0.0035,
+          0.0461
+        ]
+      },
+      "calibration_2y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0119,
+          "observed": 0.0112,
+          "n": 1070
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0216,
+          "observed": 0.0271,
+          "n": 1070
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0277,
+          "observed": 0.0355,
+          "n": 1070
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.0334,
+          "observed": 0.0467,
+          "n": 1070
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.0393,
+          "observed": 0.0486,
+          "n": 1069
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.046,
+          "observed": 0.0664,
+          "n": 1069
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.0541,
+          "observed": 0.0692,
+          "n": 1069
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.0641,
+          "observed": 0.0683,
+          "n": 1069
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.0798,
+          "observed": 0.0814,
+          "n": 1069
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.124,
+          "observed": 0.116,
+          "n": 1069
+        }
+      ],
+      "calibration_5y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0149,
+          "observed": 0.0178,
+          "n": 1070
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0361,
+          "observed": 0.0477,
+          "n": 1070
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0575,
+          "observed": 0.0617,
+          "n": 1070
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.0767,
+          "observed": 0.0822,
+          "n": 1070
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.0957,
+          "observed": 0.1076,
+          "n": 1069
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.1141,
+          "observed": 0.116,
+          "n": 1069
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.133,
+          "observed": 0.1543,
+          "n": 1069
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.1561,
+          "observed": 0.1693,
+          "n": 1069
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.1895,
+          "observed": 0.1862,
+          "n": 1069
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.2635,
+          "observed": 0.2563,
+          "n": 1069
+        }
+      ]
+    },
+    "recent": {
+      "n": 22541,
+      "terminated": 3658,
+      "completed": 15938,
+      "censored": 2945,
+      "by_horizon": {
+        "1y": {
+          "observed_cif": 0.0294,
+          "mean_predicted_cif": 0.0189,
+          "time_auc": 0.6389,
+          "time_auc_yes_no_model": 0.5291,
+          "brier": 0.0285,
+          "brier_null": 0.0285
+        },
+        "2y": {
+          "observed_cif": 0.0672,
+          "mean_predicted_cif": 0.0493,
+          "time_auc": 0.6505,
+          "time_auc_yes_no_model": 0.5859,
+          "brier": 0.0621,
+          "brier_null": 0.0628
+        },
+        "3y": {
+          "observed_cif": 0.1013,
+          "mean_predicted_cif": 0.0763,
+          "time_auc": 0.6561,
+          "time_auc_yes_no_model": 0.6183,
+          "brier": 0.0895,
+          "brier_null": 0.0914
+        },
+        "5y": {
+          "observed_cif": 0.1439,
+          "mean_predicted_cif": 0.1154,
+          "time_auc": 0.6649,
+          "time_auc_yes_no_model": 0.6475,
+          "brier": 0.1196,
+          "brier_null": 0.1239
+        }
+      },
+      "time_auc_2y_bootstrap": {
+        "ci95": [
+          0.6376,
+          0.6627
+        ],
+        "difference_ci95": [
+          0.0492,
+          0.0772
+        ]
+      },
+      "calibration_2y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0122,
+          "observed": 0.0129,
+          "n": 2255
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0215,
+          "observed": 0.028,
+          "n": 2254
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0274,
+          "observed": 0.047,
+          "n": 2254
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.0331,
+          "observed": 0.0519,
+          "n": 2254
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.039,
+          "observed": 0.0626,
+          "n": 2254
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.0454,
+          "observed": 0.0674,
+          "n": 2254
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.053,
+          "observed": 0.0763,
+          "n": 2254
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.0629,
+          "observed": 0.0998,
+          "n": 2254
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.0778,
+          "observed": 0.0989,
+          "n": 2254
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.1209,
+          "observed": 0.1269,
+          "n": 2254
+        }
+      ],
+      "calibration_5y": [
+        {
+          "bin": 0,
+          "mean_predicted": 0.0158,
+          "observed": 0.0191,
+          "n": 2255
+        },
+        {
+          "bin": 1,
+          "mean_predicted": 0.0396,
+          "observed": 0.0506,
+          "n": 2254
+        },
+        {
+          "bin": 2,
+          "mean_predicted": 0.0623,
+          "observed": 0.0923,
+          "n": 2254
+        },
+        {
+          "bin": 3,
+          "mean_predicted": 0.0823,
+          "observed": 0.1118,
+          "n": 2254
+        },
+        {
+          "bin": 4,
+          "mean_predicted": 0.1001,
+          "observed": 0.1406,
+          "n": 2254
+        },
+        {
+          "bin": 5,
+          "mean_predicted": 0.1173,
+          "observed": 0.1695,
+          "n": 2254
+        },
+        {
+          "bin": 6,
+          "mean_predicted": 0.1357,
+          "observed": 0.1872,
+          "n": 2254
+        },
+        {
+          "bin": 7,
+          "mean_predicted": 0.1576,
+          "observed": 0.2085,
+          "n": 2254
+        },
+        {
+          "bin": 8,
+          "mean_predicted": 0.1869,
+          "observed": 0.2227,
+          "n": 2254
+        },
+        {
+          "bin": 9,
+          "mean_predicted": 0.2562,
+          "observed": 0.2369,
+          "n": 2254
+        }
+      ]
+    }
+  },
+  "incidence_by_start_cohort": [
+    {
+      "start_years": "2008-2010",
+      "n": 15112,
+      "still_running": 0.007,
+      "terminated_1y": 0.0293,
+      "terminated_2y": 0.0625,
+      "terminated_5y": 0.122
+    },
+    {
+      "start_years": "2011-2012",
+      "n": 10169,
+      "still_running": 0.012,
+      "terminated_1y": 0.0214,
+      "terminated_2y": 0.0518,
+      "terminated_5y": 0.1124
+    },
+    {
+      "start_years": "2013-2014",
+      "n": 10426,
+      "still_running": 0.023,
+      "terminated_1y": 0.0202,
+      "terminated_2y": 0.0505,
+      "terminated_5y": 0.1143
+    },
+    {
+      "start_years": "2015-2016",
+      "n": 10694,
+      "still_running": 0.047,
+      "terminated_1y": 0.0223,
+      "terminated_2y": 0.057,
+      "terminated_5y": 0.1199
+    },
+    {
+      "start_years": "2017-2018",
+      "n": 11043,
+      "still_running": 0.092,
+      "terminated_1y": 0.0229,
+      "terminated_2y": 0.0598,
+      "terminated_5y": 0.1347
+    },
+    {
+      "start_years": "2019-2020",
+      "n": 11498,
+      "still_running": 0.168,
+      "terminated_1y": 0.0356,
+      "terminated_2y": 0.0743,
+      "terminated_5y": 0.1527
+    }
+  ]
+}
