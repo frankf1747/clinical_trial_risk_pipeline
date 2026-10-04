@@ -1,0 +1,24 @@
+{
+  "label": {
+    "n": 10242,
+    "positives": 1513,
+    "auc_old": 0.7082,
+    "auc_new": 0.7097,
+    "difference": 0.0015,
+    "difference_ci95": [
+      -0.0029,
+      0.0059
+    ]
+  },
+  "label_enrollment": {
+    "n": 9200,
+    "positives": 471,
+    "auc_old": 0.7797,
+    "auc_new": 0.7885,
+    "difference": 0.0089,
+    "difference_ci95": [
+      0.0029,
+      0.0146
+    ]
+  }
+}

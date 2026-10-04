@@ -15,6 +15,10 @@ being dropped, and nothing about the end date enters the features.
 `recalibration` maps the log-odds of terminating and of completing (vs still running) in every period
 through an intercept and a slope each; it is fit afterwards on recent calendar time (ctrisk.ml.recalibrate)
 so the probabilities reflect today's level of risk. IDENTITY leaves the hazards as learned.
+
+With seeds > 1 the hazards come from a seed ensemble: that many fits differing only in the random seed, with
+their per-period class log-odds averaged before the softmax. One fit's next-2-year risk for a single trial
+moves a lot from seed to seed; the average far less.
 """
 import datetime as dt
 
@@ -80,11 +84,12 @@ def expand(time: np.ndarray, event: np.ndarray, width: float = WIDTH, periods: i
 
 class SurvivalModel:
     def __init__(self, columns: list[str], params: dict, text: TextFeatures | None,
-                 width: float = WIDTH, periods: int = PERIODS):
+                 width: float = WIDTH, periods: int = PERIODS, seeds: int = 1):
         self.columns, self.params, self.text = list(columns), dict(params), text
-        self.width, self.periods = width, periods
+        self.width, self.periods, self.seeds = width, periods, seeds
         self.categories: dict | None = None
-        self.lgbm: lgb.LGBMClassifier | None = None
+        self.lgbm: lgb.LGBMClassifier | None = None        # the first member
+        self.members: list[lgb.LGBMClassifier] = []
         self.recalibration = IDENTITY
 
     def _base(self, frame: pd.DataFrame) -> pd.DataFrame:
@@ -111,23 +116,34 @@ class SurvivalModel:
             vr, vp, vy = expand(vtime, vevent, self.width, self.periods)
             kwargs = {"eval_X": self._periods(self._base(vframe), vr, vp), "eval_y": vy,
                       "callbacks": [lgb.early_stopping(50, verbose=False)]}
-        self.lgbm = lgb.LGBMClassifier(objective="multiclass", num_class=3, **self.params)
-        self.lgbm.fit(self._periods(X, rows, period), y, **kwargs)
+        Xp, seed = self._periods(X, rows, period), self.params.get("random_state", 0)
+        self.members = [lgb.LGBMClassifier(objective="multiclass", num_class=3,
+                                           **{**self.params, "random_state": seed + i}).fit(Xp, y, **kwargs)
+                        for i in range(self.seeds)]
+        self.lgbm = self.members[0]
         return self
 
     @property
     def best_iteration(self) -> int:
         return self.lgbm.best_iteration_ or self.params["n_estimators"]
 
-    def hazards(self, frame: pd.DataFrame, chunk: int = 4000, raw: bool = False) -> np.ndarray:
+    def _predict(self, Xp: pd.DataFrame, members: slice | None) -> np.ndarray:
+        """Class probabilities, from the members' log-odds averaged."""
+        fitted = getattr(self, "members", None) or [self.lgbm]             # models saved before the ensemble
+        logits = np.mean([m.predict(Xp, raw_score=True) for m in fitted[members or slice(None)]], axis=0)
+        w = np.exp(logits - logits.max(axis=1, keepdims=True))
+        return w / w.sum(axis=1, keepdims=True)
+
+    def hazards(self, frame: pd.DataFrame, chunk: int = 4000, raw: bool = False,
+                members: slice | None = None) -> np.ndarray:
         """(trials, periods, 3): P(still running, terminated, completed) in each period, if at risk in it.
-        raw=True: as learned, without the recalibration."""
+        raw=True: as learned, without the recalibration. members: a slice of the ensemble (default all)."""
         X = self._base(frame)
         out = np.empty((len(X), self.periods, 3))
         for lo in range(0, len(X), chunk):
             idx = np.arange(lo, min(lo + chunk, len(X)))
             rows, period = np.repeat(idx, self.periods), np.tile(np.arange(self.periods), len(idx))
-            out[idx] = self.lgbm.predict_proba(self._periods(X, rows, period)).reshape(len(idx), self.periods, 3)
+            out[idx] = self._predict(self._periods(X, rows, period), members).reshape(len(idx), self.periods, 3)
         return out if raw else recalibrated(out, getattr(self, "recalibration", IDENTITY))   # older pickles: none
 
     @staticmethod

@@ -48,3 +48,32 @@ def test_collapse_text_sums_txt_columns_into_one():
     assert out_names == ["phase", "n_countries", "registration_text"]
     assert out.shape == (2, 3)
     np.testing.assert_allclose(out, np.array([[1.0, 2.0, 0.75], [3.0, 4.0, 2.0]]))
+
+
+def test_a_seed_ensemble_averages_log_odds_and_contributions_still_add_up():
+    X, y = frame(600, 0)
+    sampled = {**PARAMS, "subsample": 0.8, "subsample_freq": 1, "colsample_bytree": 0.8}   # as in training
+    one = RiskModel(["phase", "n_countries"], sampled, text=None).fit(X, y)
+    ens = RiskModel(["phase", "n_countries"], sampled, text=None, seeds=4).fit(X, y)
+    Xn, _ = frame(50, 1)
+    assert len(ens.members) == 4 and ens.lgbm is ens.members[0]
+    assert np.allclose(ens.members[0].predict(ens._matrix(Xn), raw_score=True), one.log_odds(Xn))   # seed 0 first
+    members = ens.member_log_odds(Xn)
+    assert members.shape == (4, 50) and not np.allclose(members[0], members[1])                   # seeds differ
+    assert np.allclose(ens.predict_proba(Xn), 1 / (1 + np.exp(-members.mean(axis=0))))
+    bias = np.mean([m.predict(ens._matrix(Xn), pred_contrib=True)[:, -1] for m in ens.members], axis=0)
+    assert np.allclose(ens.contributions(Xn).sum(axis=1) + bias, ens.log_odds(Xn))
+
+
+def test_models_saved_before_the_ensemble_still_score():
+    X, y = frame(600, 0)
+    m = RiskModel(["phase", "n_countries"], PARAMS, text=None).fit(X, y)
+    del m.members, m.seeds                                                # as an old pickle
+    assert m.predict_proba(X.head()).shape == (5,) and m.contributions(X.head()).shape == (5, 2)
+
+
+def test_text_components_do_not_depend_on_row_order():
+    X, _ = frame(600, 0)
+    a = TextFeatures(n_components=3, min_df=1).fit(X["text"])
+    b = TextFeatures(n_components=3, min_df=1).fit(X["text"].sample(frac=1, random_state=3))
+    assert np.allclose(a.transform(X["text"]), b.transform(X["text"]), atol=1e-8)

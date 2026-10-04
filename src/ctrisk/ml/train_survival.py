@@ -15,7 +15,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ctrisk.ml.recalibrate import recalibrate
+from ctrisk.ml.evaluate import refit_agreement
+from ctrisk.ml.recalibrate import MAX_ELAPSED, recalibrate
 from ctrisk.ml.registry import MODELS_DIR, latest, load, next_version, save
 from ctrisk.ml.survival import PERIODS, WIDTH, SurvivalModel, durations
 from ctrisk.ml.survival_eval import (
@@ -33,6 +34,7 @@ COHORTS = {"test": ("2015-01-01", "2017-01-01"), "recent": ("2017-01-01", "2021-
 BASE = {"n_estimators": 2000, "subsample": 0.8, "subsample_freq": 1, "colsample_bytree": 0.8,
         "random_state": 0, "verbose": -1}
 GRID = [{"num_leaves": nl, "learning_rate": 0.05, "min_child_samples": 200} for nl in (15, 31, 63)]
+SEEDS = 10       # the final model is a seed ensemble (tuning uses one fit), as the yes/no model
 
 
 def population(frame: pd.DataFrame) -> pd.DataFrame:
@@ -103,12 +105,31 @@ def evaluate(model: SurvivalModel, fit: pd.DataFrame, cohort: pd.DataFrame, yes_
     return out
 
 
-def run(frame: pd.DataFrame, columns: list[str], yes_no_model, grid=GRID, text_min_df: int = 20):
+def refit_stability(model: SurvivalModel, fit: pd.DataFrame, running: pd.DataFrame, text_min_df: int) -> dict:
+    """Refit independently (other seeds, rows shuffled, text refit) and compare the next-2-year risk (as
+    learned) of trials running at the snapshot, for one member and for the whole ensemble."""
+    shuffled = fit.sample(frac=1, random_state=1)
+    other = SurvivalModel(model.columns, {**model.params, "random_state": model.params.get("random_state", 0) + 1000},
+                          text=TextFeatures(min_df=text_min_df) if model.text else None, seeds=model.seeds)
+    other.fit(shuffled, shuffled["time"], shuffled["event"])
+    elapsed = running["time"].to_numpy()
+    logit = lambda p: np.log(np.clip(p, 1e-9, 1 - 1e-9) / (1 - np.clip(p, 1e-9, 1 - 1e-9)))
+
+    def risk(m, members=None):
+        return logit(m.conditional_cif(None, elapsed, 2.0, h=m.hazards(running, raw=True, members=members)))
+    everyone = np.ones(len(running), bool)
+    return {"seeds": model.seeds, "running_trials": len(running),
+            "single_fit": refit_agreement(risk(model, slice(0, 1)), risk(other, slice(0, 1)), everyone),
+            "ensemble": refit_agreement(risk(model), risk(other), everyone)}
+
+
+def run(frame: pd.DataFrame, columns: list[str], yes_no_model, grid=GRID, text_min_df: int = 20, seeds: int = SEEDS):
     pop = population(frame)
     fit = pop[pop["start"] < FIT_END]
     fit = fit[(fit["split"] == "train") | (fit["event"] == 0)]          # finished training trials + censored
     params, results = tune(fit, columns, grid, text_min_df)
-    model = SurvivalModel(columns, params, text=TextFeatures(min_df=text_min_df)).fit(fit, fit["time"], fit["event"])
+    model = SurvivalModel(columns, params, text=TextFeatures(min_df=text_min_df), seeds=seeds)
+    model.fit(fit, fit["time"], fit["event"])
     report = {"params": params, "grid": results, "width_years": WIDTH, "periods": PERIODS,
               "fit": {"n": len(fit), "terminated": int((fit["event"] == 1).sum()),
                       "completed": int((fit["event"] == 2).sum()), "censored": int((fit["event"] == 0).sum()),
@@ -119,6 +140,9 @@ def run(frame: pd.DataFrame, columns: list[str], yes_no_model, grid=GRID, text_m
         report["cohorts"][name] = evaluate(model, fit, c, yes_no_model.predict_proba(c))
     later = pop[pop["start"] >= FIT_END]                                   # none of these fit the hazards
     report["recalibration"] = recalibrate(model, later, yes_no=yes_no_model.predict_proba(later))
+    if seeds > 1:
+        running = pop[(pop["event"] == 0) & (pop["time"] <= MAX_ELAPSED)]
+        report["refit_stability"] = refit_stability(model, fit, running, text_min_df)
     return model, report
 
 
@@ -139,7 +163,7 @@ if __name__ == "__main__":
     model, report = run(frame.reset_index(drop=True), columns, models["label"])
     sv = next_version(SURVIVAL_DIR)
     git = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=False).stdout.strip()
-    manifest = {"version": sv, "yes_no_version": version, "snowflake_clone": clone, "git": git,
+    manifest = {"version": sv, "yes_no_version": version, "snowflake_clone": clone, "git": git, "seeds": SEEDS,
                 "trained_at": datetime.now(UTC).isoformat(), "columns": columns}
     folder = save(SURVIVAL_DIR, sv, model, metrics=report, manifest=manifest)
     for name, r in report["cohorts"].items():
@@ -154,5 +178,7 @@ if __name__ == "__main__":
               f"{b['predicted_as_learned']} as learned, {b['predicted_recalibrated']} recalibrated; time-AUC "
               f"{b['time_auc']} (yes/no model {b.get('time_auc_yes_no_model')})")
     print("serving recalibration:", report["recalibration"]["serving"])
+    if "refit_stability" in report:
+        print("refit stability, next-2-year risk of running trials:", report["refit_stability"])
     print(f"saved {folder}  ({Path(folder).name}, params {report['params']})")
     print(json.dumps(report["grid"]))

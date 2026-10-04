@@ -26,12 +26,13 @@ SCORE_TYPES = {"score": "forward", "test": "held_out", "recent": "held_out", "la
 
 
 def _like(model: RiskModel) -> RiskModel:
-    """An unfitted model with the same columns, parameters and text settings."""
+    """An unfitted model with the same columns, parameters, text settings and ensemble size."""
     text = (TextFeatures(n_components=model.text.n_components, min_df=model.text.min_df,
                          max_features=model.text.max_features) if model.text else None)
     embed = getattr(model, "embed", None)
     return RiskModel(model.columns, model.params, text=text,
-                     embed=EmbeddingFeatures(n_components=embed.n_components) if embed else None)
+                     embed=EmbeddingFeatures(n_components=embed.n_components) if embed else None,
+                     seeds=getattr(model, "seeds", 1))
 
 
 def cross_fit(model: RiskModel, frame: pd.DataFrame, y: pd.Series) -> tuple[pd.Series, np.ndarray, list[str]]:

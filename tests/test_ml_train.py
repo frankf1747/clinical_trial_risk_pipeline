@@ -32,7 +32,7 @@ def synthetic(n=5000, seed=0):
 
 @pytest.fixture(scope="module")
 def result():
-    return run(synthetic(), grid=SMALL_GRID, text_min_df=1, exclude=())     # n_countries carries the signal
+    return run(synthetic(), grid=SMALL_GRID, text_min_df=1, exclude=(), seeds=2)   # n_countries carries the signal
 
 
 def test_every_target_is_trained_and_evaluated(result):
@@ -77,7 +77,7 @@ def test_refuses_a_train_test_or_recent_row_without_a_label():
     frame = synthetic(200)
     frame.loc[frame["split"] == "train", "label"] = np.nan
     with pytest.raises(ValueError, match="without a label"):
-        run(frame, grid=SMALL_GRID, text_min_df=1, exclude=())
+        run(frame, grid=SMALL_GRID, text_min_df=1, exclude=(), seeds=2)
 
 
 def test_reason_targets_count_and_evaluate_only_their_own_rows(result):
@@ -98,7 +98,7 @@ def test_text_is_only_ever_fit_on_training_rows(monkeypatch):
     frame["text"] = frame["nct_id"]                    # each document names its own trial
     seen, original = [], TextFeatures.fit
     monkeypatch.setattr(TextFeatures, "fit", lambda self, texts: seen.append(set(texts)) or original(self, texts))
-    run(frame, grid=SMALL_GRID, text_min_df=1, exclude=())
+    run(frame, grid=SMALL_GRID, text_min_df=1, exclude=(), seeds=2)
     train = frame["split"] == "train"
     assert seen and all(s <= set(frame.loc[train, "nct_id"]) for s in seen)
     inner = train & (frame["start_date"] < "2013-01-01") & frame["label"].notna()
@@ -143,6 +143,15 @@ def test_fields_the_audit_found_leaking_are_left_out_by_default():
     """docs/audits/2026-10-01-point-in-time.md: these changed after start more often for terminated trials."""
     from ctrisk.ml.features import POST_START_LEAKS
     assert set(POST_START_LEAKS) == {"criteria_count", "criteria_chars", "n_countries", "us_only"}
-    _, report = run(synthetic(1500), grid=SMALL_GRID, text_min_df=1)
+    _, report = run(synthetic(1500), grid=SMALL_GRID, text_min_df=1, seeds=1)
     assert "n_countries" not in report["features"]["columns"]
     assert report["features"]["excluded"] == ["n_countries"]          # the synthetic frame has only this one
+
+
+def test_the_scored_model_is_a_seed_ensemble_and_its_refit_stability_is_reported(result):
+    models, report = result
+    assert len(models["label"].members) == 2 and models["label"].seeds == 2
+    s = report["targets"]["label"]["refit_stability"]
+    assert s["seeds"] == 2 and set(s) == {"seeds", "trials", "single_fit", "ensemble"}
+    for fit in ("single_fit", "ensemble"):
+        assert 0.5 < s[fit]["spearman"] <= 1 and 0 <= s[fit]["share_moved_over_10_points"] <= 1

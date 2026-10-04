@@ -96,3 +96,26 @@ def test_calibration_intercept_is_found_even_when_newton_would_overshoot():
     y = (np.arange(1000) < 100).astype(float)
     expected = np.log(0.1 / 0.9) - np.log(0.999 / 0.001)        # shift that makes the mean match
     assert calibration_fit(y, p)["intercept"] == pytest.approx(expected, abs=1e-3)
+
+
+def test_refit_agreement_compares_two_fits_on_the_same_trials():
+    from ctrisk.ml.evaluate import refit_agreement
+    rng = np.random.default_rng(0)
+    a = rng.normal(size=2000)
+    reference = np.r_[np.zeros(1000, bool), np.ones(1000, bool)]
+    same = refit_agreement(a, a, reference)
+    assert same["spearman"] == 1 and same["median_abs_change"] == 0 and same["share_moved_over_10_points"] == 0
+    noisy = refit_agreement(a, a + rng.normal(scale=0.5, size=2000), reference)
+    assert noisy["spearman"] < 0.95 and noisy["share_moved_over_10_points"] > 0.1
+
+
+def test_paired_auc_difference_is_centred_on_the_gap_and_zero_for_identical_scores():
+    from ctrisk.ml.compare import paired_auc_difference
+    rng = np.random.default_rng(1)
+    y = rng.integers(0, 2, 3000)
+    weak = y + rng.normal(scale=2.0, size=3000)
+    strong = y + rng.normal(scale=0.8, size=3000)
+    same = paired_auc_difference(y, weak, weak, n=200)
+    assert same["difference"] == 0 and same["difference_ci95"] == [0, 0]
+    better = paired_auc_difference(y, weak, strong, n=200)
+    assert better["auc_new"] > better["auc_old"] and 0 < better["difference_ci95"][0] < better["difference"] < better["difference_ci95"][1]

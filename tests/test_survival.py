@@ -64,3 +64,17 @@ def test_conditional_risk_for_a_running_trial_is_a_proper_probability(fitted):
     fresh = model.conditional_cif(frame, elapsed=np.zeros(len(frame)), window=2.0)
     assert ((0 <= later) & (later <= 1)).all()
     assert np.allclose(fresh, model.cif(frame, [2])[:, 0])               # from the start, it is the plain CIF
+
+
+def test_a_seed_ensemble_averages_class_log_odds_and_one_member_matches_a_single_fit():
+    frame, t, e = synthetic(2000)
+    params = {"n_estimators": 40, "num_leaves": 7, "learning_rate": 0.1, "min_child_samples": 50, "verbose": -1,
+              "subsample": 0.8, "subsample_freq": 1, "colsample_bytree": 0.8, "random_state": 0}
+    one = SurvivalModel(["x", "noise", "phase"], params, text=None).fit(frame, t, e)
+    ens = SurvivalModel(["x", "noise", "phase"], params, text=None, seeds=3).fit(frame, t, e)
+    head = frame.head(20)
+    assert len(ens.members) == 3 and np.allclose(ens.hazards(head, members=slice(0, 1)), one.hazards(head))
+    h = ens.hazards(head)
+    assert np.allclose(h.sum(axis=-1), 1) and not np.allclose(h, one.hazards(head))
+    del one.members                                                      # as a pickle saved before the ensemble
+    assert np.allclose(one.hazards(head), ens.hazards(head, members=slice(0, 1)))

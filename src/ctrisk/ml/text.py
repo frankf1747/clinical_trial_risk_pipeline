@@ -1,6 +1,8 @@
 """Registration text -> a few dense columns: TF-IDF over word 1-2grams, compressed with SVD.
 
-Fit on training trials only, so nothing about test trials shapes the vocabulary or components.
+Fit on training trials only, so nothing about test trials shapes the vocabulary or components. The SVD is
+exact (ARPACK): the default randomized solver had not converged on the weaker components, so half of them
+changed with the order the training rows arrived in, and with them every score.
 """
 import numpy as np
 import pandas as pd
@@ -19,10 +21,10 @@ class TextFeatures:
                                      sublinear_tf=True, dtype=np.float32)
         matrix = self.tfidf.fit_transform(texts.fillna(""))
         k = min(self.n_components, matrix.shape[1] - 1)
-        self.svd = TruncatedSVD(n_components=k, random_state=0).fit(matrix)
+        self.svd = TruncatedSVD(n_components=k, algorithm="arpack", random_state=0).fit(matrix.astype(np.float64))
         self.columns = [f"txt_{i:02d}" for i in range(k)]
         return self
 
     def transform(self, texts: pd.Series) -> pd.DataFrame:
-        dense = self.svd.transform(self.tfidf.transform(texts.fillna("")))
+        dense = self.svd.transform(self.tfidf.transform(texts.fillna("")).astype(np.float64))
         return pd.DataFrame(dense, columns=self.columns, index=texts.index)

@@ -30,7 +30,7 @@ def test_run_fits_on_pre_2015_starts_and_reports_both_cohorts(monkeypatch):
     original = SurvivalModel.fit
     monkeypatch.setattr(SurvivalModel, "fit", lambda self, f, t, e, valid=None: seen.append(f["start"].max()) or original(self, f, t, e, valid))
     grid = [{"num_leaves": 7, "learning_rate": 0.2, "min_child_samples": 20}]
-    _, report = train_survival.run(trials(), ["x", "phase"], Constant(), grid=grid, text_min_df=1)
+    model, report = train_survival.run(trials(), ["x", "phase"], Constant(), grid=grid, text_min_df=1, seeds=2)
     assert all(s < pd.Timestamp("2015-01-01") for s in seen)
     assert set(report["cohorts"]) == {"test", "recent"}
     two = report["cohorts"]["test"]["by_horizon"]["2y"]
@@ -41,3 +41,6 @@ def test_run_fits_on_pre_2015_starts_and_reports_both_cohorts(monkeypatch):
     recal = report["recalibration"]
     assert recal["backtest"] and all("time_auc_yes_no_model" in b for b in recal["backtest"])
     assert len(recal["serving"]["params"]) == 4
+    assert len(model.members) == 2
+    stab = report["refit_stability"]
+    assert stab["seeds"] == 2 and stab["running_trials"] > 0 and {"single_fit", "ensemble"} <= set(stab)   # few running here

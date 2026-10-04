@@ -2,16 +2,17 @@
 
 Which drug trials will be stopped early, and when? This pipeline scores every Phase 1–3 drug trial on ClinicalTrials.gov for its risk of termination. It uses only what was known when each trial started: the registry record, the sponsor's track record and the drug's FDA adverse-event (FAERS) history. It is checked against the registry as it stood at each trial's start, and it is live.
 
-**Try it:** [ctrisk-lookup-420431563670.us-east1.run.app](https://ctrisk-lookup-420431563670.us-east1.run.app). Look up any of 111,118 trials by NCT ID, e.g. [NCT02868892](https://ctrisk-lookup-420431563670.us-east1.run.app/trial/NCT02868892), a 2015 cervical-cancer trial that was terminated: it started in the held-out test years, and the model ranks it riskier than 99% of active trials. JSON: `/api/trials/{nct_id}`.
+**Try it:** [ctrisk-lookup-420431563670.us-east1.run.app](https://ctrisk-lookup-420431563670.us-east1.run.app). Look up any of 111,118 trials by NCT ID, e.g. [NCT02868892](https://ctrisk-lookup-420431563670.us-east1.run.app/trial/NCT02868892), a 2015 cervical-cancer trial that was terminated: it started in the held-out test years, and the model ranks it riskier than 98% of active trials. JSON: `/api/trials/{nct_id}`.
 
 <p align="center"><img src="docs/img/lookup.png" alt="The public lookup: a running trial's termination risk, its rank, its chance of termination in the next 2 years, and the reasons" width="720"></p>
 
 ## At a glance
 
 **Results** (held-out trials the model never saw):
-- **0.708 ROC AUC** (95% CI 0.696–0.721) on 10,242 trials that started 2015–2016. The top-scored 10% terminate at 2.1× the base rate (30.4% vs 14.8%). For terminations caused by slow enrollment, the AUC is 0.780.
-- **No leak:** registry records get edited after trials start, which can leak the outcome. Rebuilt from 25 archived registry snapshots as each record stood at its trial's start, the model loses no accuracy (+0.003, 95% CI 0.000 to +0.005, 18,568 trials). Getting there meant dropping four fields that did leak.
-- **When, not just whether:** a competing-risks survival model, using the ~30,000 still-running trials as censored data, ranks terminations within 2 years better than the yes/no model (time-AUC 0.644 vs 0.586 on 2017–2020 starts; gain +0.043 to +0.073).
+- **0.710 ROC AUC** (95% CI 0.696–0.722) on 10,242 trials that started 2015–2016. The top-scored 10% terminate at 2.1× the base rate (31.7% vs 14.8%). For terminations caused by slow enrollment, the AUC is 0.789.
+- **No leak:** registry records get edited after trials start, which can leak the outcome. Rebuilt from 25 archived registry snapshots as each record stood at its trial's start, the model loses no accuracy (+0.001, 95% CI −0.001 to +0.003, 18,568 trials). Getting there meant dropping four fields that did leak.
+- **When, not just whether:** a competing-risks survival model, using the ~30,000 still-running trials as censored data, ranks terminations within 2 years better than the yes/no model (time-AUC 0.653 vs 0.580 on 2017–2020 starts; gain +0.057 to +0.089).
+- **Stable for a single trial:** one model fit's score for a given trial moved several percentile points between refits. Each model is now an average of 10 seeds, with text components computed exactly. Between two independent refits, 3% of trials move more than 10 percentile points (38% before), at no cost in accuracy. [Experiment](docs/experiments/2026-10-04-seed-ensemble.md).
 - **Termination is rising:** censoring-adjusted, trials that started 2019–20 were terminated within 2 years 45% more often than 2013–14 starts (7.4% vs 5.1%). The served survival model is recalibrated for it, and the recalibration is backtested on past years.
 
 **What runs where:**
@@ -55,25 +56,25 @@ flowchart LR
 - **Data:** the AACT flat-file snapshot of ClinicalTrials.gov (2026-09-26) and the full FAERS history (every quarter 2004–2026), both landed in GCS.
 - **Spark on Dataproc Serverless:** the same PySpark modules run locally for tests or as serverless batches (`make <job> MODE=cloud`), each with an executor cap and a TTL. They clean and label the trials, flatten FAERS, match each drug to FDA-coded substances (72.0% of labeled trials matched; spot checks against openFDA agree), and build per-trial attributes and a registration-text field. Snowflake rebuilt from the Dataproc output is identical to the locally built data: 111,118 rows, 0 differences.
 - **Snowflake:** loads the Parquet from GCS. Builds the FAERS and sponsor-history features as of each trial's start date only, with tests that catch planted leakage.
-- **Model:** LightGBM on the tabular features plus 64 SVD components of TF-IDF text. Tuned on an inner time split of the training years. Every model is versioned (`models/vN/`) with its metrics, features and the Snowflake clone it was trained on.
+- **Model:** LightGBM on the tabular features plus 64 SVD components of TF-IDF text, averaged over 10 seeds. Tuned on an inner time split of the training years. Every model is versioned (`models/vN/`) with its metrics, features and the Snowflake clone it was trained on.
 - **Serving:** every trial in the modelled population gets a score that never used its own outcome:
   - active trials: the final model
   - trials that started 2015 or later: held out from training
-  - 2008–2014 trials: leave-one-start-year-out cross-fitting (their scores average 13.4% vs a 13.9% actual termination rate)
+  - 2008–2014 trials: leave-one-start-year-out cross-fitting (their scores average 13.5% vs a 13.9% actual termination rate)
 
   Snowflake joins the scores to trial details (`TRIAL_LOOKUP`) and unloads them to GCS with `COPY INTO`. A FastAPI app on Cloud Run loads that file at startup, so it scales to zero and never queries Snowflake per visitor. Active-trial scores are also appended to `TRIAL_RISK_SCORES` for the prospective backtest. A one-file dashboard and a model card are generated from the saved metrics.
 
-## Results (model v5: trained on 2008–2014 starts, tested on 2015–2016)
+## Results (model v6: trained on 2008–2014 starts, tested on 2015–2016)
 
 | Target | Test ROC AUC (95% CI) | Logistic baseline | Top-10% precision vs base rate |
 |---|---|---|---|
-| Any termination | **0.708** (0.696–0.721) | 0.672 | 30.4% vs 14.8% (2.1×) |
-| Terminated for enrollment | **0.780** (0.761–0.798) | 0.756 | 16.5% vs 5.1% (3.2×) |
-| Terminated for safety | 0.675 (0.618–0.730) | 0.676 | 87 test positives: too few to be conclusive |
+| Any termination | **0.710** (0.696–0.722) | 0.672 | 31.7% vs 14.8% (2.1×) |
+| Terminated for enrollment | **0.789** (0.770–0.807) | 0.756 | 17.0% vs 5.1% (3.3×) |
+| Terminated for safety | 0.676 (0.613–0.731) | 0.676 | 87 test positives: too few to be conclusive |
 
-**What drives the scores** (mean SHAP contribution on the test set): the registration text, then whether the trial accepts healthy volunteers (No raises risk, Yes lowers it), the sponsor's prior termination rate (high third +0.24, low third −0.18 log-odds), and phase (Phase 2 up, Phase 1 and 3 down). These describe the model, not causes of termination. Text adds +0.012 AUC; FAERS history about 0.001.
+**What drives the scores** (mean SHAP contribution on the test set): the registration text, then whether the trial accepts healthy volunteers (No raises risk, Yes lowers it), the sponsor's prior termination rate (high third +0.22, low third −0.17 log-odds), and phase (Phase 2 up, Phase 1 and 3 down). These describe the model, not causes of termination. Text adds +0.010 AUC; FAERS history nothing measurable (+0.0003).
 
-**v3 vs v4.** v3 also used criteria count and length, country count and US-only. It scored higher on the test years (0.714, 95% CI 0.700–0.726), but the audit showed those fields had changed after start more often for trials that later terminated. v3 lost 0.005 AUC when scored on the at-start records; v4 loses nothing. v4 trades 0.011 of headline AUC for a number that holds up: those fields carried real signal as well as the leak. **v5** is v4 with the full FAERS history instead of a Q1 sample: equivalent accuracy (v5 minus v4 −0.000 to +0.010, paired bootstrap), but current data: v4's adverse-event features stopped at 2020, so most of today's active trials were scored on frozen counts.
+**From v3 to v6.** v3 also used criteria count and length, country count and US-only. It scored higher on the test years (0.714, 95% CI 0.700–0.726), but the audit showed those fields had changed after start more often for trials that later terminated. v3 lost 0.005 AUC when scored on the at-start records; v4 loses nothing. v4 trades 0.011 of headline AUC for a number that holds up: those fields carried real signal as well as the leak. **v5** is v4 with the full FAERS history instead of a Q1 sample: equivalent accuracy (v5 minus v4 −0.000 to +0.010, paired bootstrap), but current data: v4's adverse-event features stopped at 2020, so most of today's active trials were scored on frozen counts. **v6** averages 10 seeds per model and computes the text components exactly, for stable single-trial scores. Accuracy is the same or better: v6 minus v5 is +0.002 (−0.003 to +0.006) overall and +0.009 (+0.003 to +0.015) for enrollment.
 
 ### When, not just whether: a competing-risks survival model
 
@@ -86,12 +87,12 @@ It's evaluated with metrics built for censored data. Time-dependent AUC asks whe
 
 | Ranking terminations by t (time-AUC) | Within 1 year | Within 2 years (95% CI) | Within 5 years |
 |---|---|---|---|
-| Survival model, 2015–16 starts | 0.652 | 0.642 (0.621–0.666) | 0.683 |
-| Yes/no model v5, same trials | 0.554 | 0.622 | 0.681 |
-| Survival model, 2017–20 starts (13% still running) | 0.628 | 0.644 (0.630–0.658) | 0.662 |
-| Yes/no model v5, same trials | 0.529 | 0.586 | 0.648 |
+| Survival model, 2015–16 starts | 0.662 | 0.649 (0.630–0.672) | 0.689 |
+| Yes/no model v6, same trials | 0.538 | 0.613 | 0.680 |
+| Survival model, 2017–20 starts (13% still running) | 0.640 | 0.653 (0.638–0.666) | 0.669 |
+| Yes/no model v6, same trials | 0.521 | 0.580 | 0.649 |
 
-The gain is clearest for early terminations (1 year: 0.65 vs 0.55) and on the censored 2017–20 cohort, where the yes/no model's finished-trials-only view is most biased: at 2 years +0.043 to +0.073 (paired bootstrap). On 2015–16 starts the 2-year gain is about +0.02 and not significant (−0.005 to +0.044). Three fits that differed only in row order all agree on this. Training now reads rows in a fixed order, so reruns reproduce. Censoring-adjusted termination within 2 years, by start years:
+The gain is clearest for early terminations (1 year: 0.66 vs 0.54) and on the censored 2017–20 cohort, where the yes/no model's finished-trials-only view is most biased. At 2 years the gain is +0.057 to +0.089 there and +0.016 to +0.060 on 2015–16 starts (paired bootstrap). The 2015–16 gain was not significant for single survival fits (intervals crossed zero in two of three). The 10-seed ensemble made it so, though part of the change is a slightly lower yes/no baseline (0.613 vs 0.622 for v5). Censoring-adjusted termination within 2 years, by start years:
 
 | 2008–10 | 2011–12 | 2013–14 | 2015–16 | 2017–18 | 2019–20 |
 |---|---|---|---|---|---|
@@ -99,23 +100,24 @@ The gain is clearest for early terminations (1 year: 0.65 vs 0.55) and on the ce
 
 Termination fell through the early 2010s and has risen since: trials that started in 2019–20 (the COVID era) were terminated within 2 years about 45% more often than 2013–14 starts. The binary approach could not measure this, because it cannot adjust for trials still running.
 
-**Recalibrated for today, and backtested.** Learned from 2008–2014 starts, the raw probabilities run low for trials running now, and too spread out. Since 2020, trials of every start year have been terminated 18–29% more often than the model expected. So the per-period odds of termination are recalibrated (intercept and slope, by maximum likelihood) on calendar 2022–2024. The newest 1.7 years are skipped, because completions fall short there too: sponsors record endings late. The backtest repeats this at five past dates for the trials then running, recalibrating only on what was known 1.7 years earlier:
+**Recalibrated for today, and backtested.** Learned from 2008–2014 starts, the raw probabilities run low for trials running now, and too spread out. Since 2020, trials of every start year have been terminated 20–32% more often than the model expected. So the per-period odds of termination are recalibrated (intercept and slope, by maximum likelihood) on calendar 2022–2024. The newest 1.7 years are skipped, because completions fall short there too: sponsors record endings late. The backtest repeats this at five past dates for the trials then running, recalibrating only on what was known 1.7 years earlier:
 
 | Trials running at | 2019-01 | 2020-01 | 2021-01 | 2022-01 | 2023-01 |
 |---|---|---|---|---|---|
 | Terminated in the next 2 years | 8.1% | 8.8% | 9.2% | 10.0% | 10.3% |
-| Predicted, raw | 7.6% | 7.7% | 7.6% | 7.5% | 7.5% |
-| Predicted, recalibrated | 7.8% | 8.4% | 8.3% | 8.2% | 8.4% |
-| Time-AUC (yes/no model) | 0.592 (0.562) | 0.583 (0.536) | 0.602 (0.562) | 0.595 (0.553) | 0.594 (0.556) |
+| Predicted, raw | 7.4% | 7.5% | 7.5% | 7.4% | 7.3% |
+| Predicted, recalibrated | 8.0% | 8.5% | 8.4% | 8.3% | 8.5% |
+| Time-AUC (yes/no model) | 0.600 (0.556) | 0.595 (0.536) | 0.613 (0.561) | 0.596 (0.554) | 0.595 (0.559) |
 
-Recalibration fixes most of the spread: in the safest tenth, predicted 2.2% → 3.8% vs 5.0% observed. It narrows the gap in the average, but predictions still run low while termination keeps rising. Ranking running trials is harder than ranking new ones, and the survival model still does it better than the yes/no model. Details: [`docs/survival_card.md`](docs/survival_card.md).
+Recalibration fixes most of the spread: in the safest tenth, predicted 2.4% → 3.8% vs 4.6% observed. It narrows the gap in the average, but predictions still run low while termination keeps rising. Ranking running trials is harder than ranking new ones, and the survival model still does it better than the yes/no model. Details: [`docs/survival_card.md`](docs/survival_card.md).
 
 ## Why the number can be trusted
 
 - **Time split, untouched test years.** Trained on 2008–2014 starts and tested on 2015–2016. Tuning and text fitting never see the test rows, and `tests/test_ml_train.py` pins both.
-- **Point-in-time audit.** For 18,568 trials that started in 2017–2020, the registry fields were rebuilt from AACT archives as each record stood at its start, and the model was scored both ways on the same trials. v5: 0.692 → 0.695 (+0.003, 95% CI 0.000 to +0.005). The 9,112 trials whose archived record predates the start give +0.004 (−0.000 to +0.008). Nine format changes between old and current exports were harmonized first, each with a test. ([audit note](docs/audits/2026-10-01-point-in-time.md))
-- **Not a lucky window.** In rolling-origin tests, each window trained only on earlier starts: 0.713 (2012–13), 0.731 (2013–14), 0.702 (2014–15), 0.708 (2015–16).
-- **Calibration.** Brier 0.118 on the test set. Calibration slope 0.94 (scores slightly more extreme than outcomes) and intercept 0.12 (risk slightly under-predicted overall).
+- **Point-in-time audit.** For 18,568 trials that started in 2017–2020, the registry fields were rebuilt from AACT archives as each record stood at its start, and the model was scored both ways on the same trials. v6: 0.698 → 0.700 (+0.001, 95% CI −0.001 to +0.003). The 9,112 trials whose archived record predates the start give +0.003 (−0.000 to +0.007). Nine format changes between old and current exports were harmonized first, each with a test. ([audit note](docs/audits/2026-10-01-point-in-time.md))
+- **Not a lucky window.** In rolling-origin tests, each window trained only on earlier starts: 0.718 (2012–13), 0.731 (2013–14), 0.707 (2014–15), 0.710 (2015–16).
+- **Calibration.** Brier 0.118 on the test set. Calibration slope 1.08 (scores slightly less extreme than outcomes: averaging seeds tempers them) and intercept 0.11 (risk slightly under-predicted overall).
+- **Stable for a single trial.** Refit independently (other seeds, rows shuffled), the two models agree at Spearman 0.992 on 40,136 trials; 3% move more than 10 percentile points among active trials. The survival model's next-2-year risk: 0.989 and 3.5%.
 - **Leakage found and removed along the way:**
   - outcome measures rewritten when results were posted
   - termination wording in summaries
@@ -133,7 +135,7 @@ Samples, the text model, subgroup AUCs, per-trial contributors and the prospecti
 - Planned enrollment is excluded because the current record already reflects the outcome.
 - FAERS features are a historical reporting signal, not a measure of drug safety. FAERS has duplicate and incomplete reports and cannot establish causation or incidence (FDA). Even the full 2004–2026 history adds nothing measurable to these models.
 - The yes/no risk percentages are calibrated on the 2015–2016 cohort only. Use them as rankings.
-- A single trial's score carries refit noise. Two cross-fits of the 2008–2014 scores that differed only in row order agree at Spearman 0.95, but 30% of those trials moved more than 10 percentile points. Rankings across many trials (the AUCs) barely change. Read one trial's percentile as a band.
+- A single trial's percentile still carries a little refit noise: the median change between independent refits is about 2 points, and 3% of trials move more than 10. Read it as a band of a few points.
 - The survival model's next-2-year probabilities are recalibrated to 2022–2024 termination rates. Termination has been rising, and in the backtest they ran low when it kept rising.
 
 ## Data

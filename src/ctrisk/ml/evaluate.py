@@ -90,6 +90,25 @@ def calibration_fit(y, score, iterations: int = 50) -> dict:
     return {"intercept": round(float(a), 4), "slope": round(float(beta[1]), 4)}
 
 
+def _percentile(scores: np.ndarray, reference: np.ndarray) -> np.ndarray:
+    ref = np.sort(reference)
+    return 100 * np.searchsorted(ref, scores, side="left") / len(ref)
+
+
+def refit_agreement(a: np.ndarray, b: np.ndarray, reference: np.ndarray) -> dict:
+    """How far two independent fits' log-odds for the same trials disagree: rank correlation, change in
+    probability, and change in percentile among the reference rows (active trials, as the lookup ranks)."""
+    pa, pb = 1 / (1 + np.exp(-a)), 1 / (1 + np.exp(-b))
+    dp = np.abs(pa - pb)
+    dpct = np.abs(_percentile(a, a[reference]) - _percentile(b, b[reference]))
+    return {"spearman": round(float(pd.Series(a).corr(pd.Series(b), method="spearman")), 4),
+            "median_abs_change": round(float(np.median(dp)), 4),
+            "p95_abs_change": round(float(np.quantile(dp, 0.95)), 4),
+            "median_percentile_change": round(float(np.median(dpct)), 2),
+            "share_moved_over_5_points": round(float(np.mean(dpct > 5)), 4),
+            "share_moved_over_10_points": round(float(np.mean(dpct > 10)), 4)}
+
+
 def subgroup_auc(y: pd.Series, score: pd.Series, groups: pd.Series, min_n: int = 100) -> dict:
     """ROC AUC per group, for groups with at least min_n rows and both outcomes. Inputs share an index."""
     out = {}

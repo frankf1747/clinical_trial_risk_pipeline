@@ -107,3 +107,30 @@ def test_survival_card_reports_the_recalibration_and_its_landmark_backtest():
     assert "| 2022 | 38,893 | 1.32 | 0.86 |" in text
     assert "terminating -1.10 + 0.65 × learned log-odds" in text
     assert "| 2023-01-01 | 17,016 | 10.3% | 7.4% | 8.4% | 0.592 | 0.556 |" in text
+
+
+def test_card_reports_the_ensemble_and_its_refit_stability():
+    metrics, manifest, features = load()
+    agree = {"spearman": 0.931, "median_abs_change": 0.0168, "p95_abs_change": 0.0673, "median_percentile_change": 5.7,
+             "share_moved_over_5_points": 0.535, "share_moved_over_10_points": 0.322}
+    tight = {**agree, "spearman": 0.992, "share_moved_over_10_points": 0.024}
+    metrics["targets"]["label"]["refit_stability"] = {"seeds": 10, "trials": 40136, "single_fit": agree, "ensemble": tight}
+    text = card(metrics, {**manifest, "seeds": 10}, features)
+    assert "an ensemble of 10 such fits" in text and "## Stability across refits" in text
+    assert "| Trials moving more than 10 percentile points | 32.2% | 2.4% |" in text
+    assert "| Rank correlation between the two fits | 0.931 | 0.992 |" in text
+    assert "## Stability across refits" not in card(*load())
+
+
+def test_survival_card_reports_refit_stability_of_the_next_two_year_risk():
+    from ctrisk.ml.report import survival_card
+    folder = Path(__file__).resolve().parents[1] / "models" / "survival" / "v1"
+    metrics, manifest = (json.loads((folder / f"{n}.json").read_text()) for n in ("metrics", "manifest"))
+    agree = {"spearman": 0.867, "median_abs_change": 0.0098, "p95_abs_change": 0.0435, "median_percentile_change": 8.24,
+             "share_moved_over_5_points": 0.651, "share_moved_over_10_points": 0.43}
+    metrics["refit_stability"] = {"seeds": 10, "running_trials": 26251, "single_fit": agree,
+                                  "ensemble": {**agree, "spearman": 0.99, "share_moved_over_10_points": 0.04}}
+    text = survival_card(metrics, manifest)
+    assert "the 26,251 trials running at the snapshot" in text
+    assert "| Rank correlation between the two fits | 0.867 | 0.990 |" in text
+    assert "| Trials moving more than 10 percentile points | 43.0% | 4.0% |" in text

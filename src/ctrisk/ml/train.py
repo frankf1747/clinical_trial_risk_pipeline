@@ -24,6 +24,7 @@ from ctrisk.ml.evaluate import (
     calibration,
     calibration_fit,
     metrics,
+    refit_agreement,
     subgroup_auc,
 )
 from ctrisk.ml.features import (
@@ -53,6 +54,9 @@ ABLATIONS = {"lightgbm": ([], True), "lightgbm_no_text": ([], False),
 # 2015 reproduces the headline split. Parameters stay as tuned (on 2013-2014), so the 2012 and 2013
 # windows are slightly optimistic; text features are refit on each fold's training rows.
 ROLLING = (2012, 2013, 2014, 2015)
+# Every LightGBM fit below (tuning aside) is an ensemble of this many seeds, log-odds averaged: one fit's
+# score for a single trial moves several percentile points from seed to seed (see refit_stability).
+SEEDS = 10
 
 
 def logistic_regression(columns: list[str]):
@@ -87,7 +91,7 @@ def tune(frame: pd.DataFrame, y: pd.Series, columns: list[str], grid: list[dict]
 
 
 def rolling_origin(frame: pd.DataFrame, y: pd.Series, columns: list[str], params: dict, text_min_df: int,
-                   years=ROLLING) -> list[dict]:
+                   years=ROLLING, seeds: int = SEEDS) -> list[dict]:
     """Held-out AUC and calibration on successive two-year windows: is the headline a lucky period?"""
     labeled = frame[frame["split"].isin(["train", "test"]) & y.notna()]
     year = pd.to_datetime(labeled["start_date"]).dt.year
@@ -99,11 +103,26 @@ def rolling_origin(frame: pd.DataFrame, y: pd.Series, columns: list[str], params
         if yf.nunique() < 2 or yh.nunique() < 2:
             continue
         embed = EmbeddingFeatures() if "embedding" in frame.columns else None
-        p = RiskModel(columns, params, text=TextFeatures(min_df=text_min_df), embed=embed).fit(fit, yf).predict_proba(held)
+        p = (RiskModel(columns, params, text=TextFeatures(min_df=text_min_df), embed=embed, seeds=seeds)
+             .fit(fit, yf).predict_proba(held))
         out.append({"test_years": f"{first}-{first + 1}", "train_n": len(fit), "n": len(held),
                     "positives": int(yh.sum()), "roc_auc": round(float(roc_auc_score(yh, p)), 4),
                     "calibration_fit": calibration_fit(yh, p)})
     return out
+
+
+def refit_stability(model: RiskModel, train: pd.DataFrame, y: pd.Series, scored: pd.DataFrame,
+                    reference: np.ndarray, text_min_df: int) -> dict:
+    """Refit the model independently (other seeds, training rows shuffled, text refit) and compare the two
+    on the same trials, for one member and for the whole ensemble."""
+    shuffled = train.sample(frac=1, random_state=1)
+    other = RiskModel(model.columns, {**model.params, "random_state": model.params.get("random_state", 0) + 1000},
+                      text=TextFeatures(min_df=text_min_df) if model.text else None, seeds=model.seeds)
+    other.fit(shuffled, y[shuffled.index])
+    a, b = model.member_log_odds(scored), other.member_log_odds(scored)
+    return {"seeds": model.seeds, "trials": len(scored),
+            "single_fit": refit_agreement(a[0], b[0], reference),
+            "ensemble": refit_agreement(a.mean(axis=0), b.mean(axis=0), reference)}
 
 
 def evaluate(p: np.ndarray, y: pd.Series, full: bool) -> dict:
@@ -115,7 +134,8 @@ def evaluate(p: np.ndarray, y: pd.Series, full: bool) -> dict:
     return out
 
 
-def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: list[dict], text_min_df: int):
+def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: list[dict], text_min_df: int,
+                 seeds: int = SEEDS):
     y = frame[target]
     rows = {s: (frame["split"] == s) & y.notna() for s in ("train", "test", "recent")}
     train, test, recent = (frame[rows[s]] for s in ("train", "test", "recent"))
@@ -136,7 +156,8 @@ def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: lis
         cols = [c for c in columns if c not in drop]
         text = shared if use_text in (True, "tfidf") else None
         embed = shared_embed if use_text in (True, "embeddings") else None
-        m = RiskModel(cols, params, text=text, fit_text=False, embed=embed, fit_embed=False).fit(train, y[rows["train"]])
+        m = RiskModel(cols, params, text=text, fit_text=False, embed=embed, fit_embed=False, seeds=seeds)
+        m.fit(train, y[rows["train"]])
         models[name] = m
     for name, m in models.items():
         predict = m if callable(m) else m.predict_proba     # the LR baseline is a plain function
@@ -150,7 +171,11 @@ def train_target(frame: pd.DataFrame, target: str, columns: list[str], grid: lis
             report[key] = subgroup_auc(yt, p, test[col])
     report["by_start_year"] = subgroup_auc(yt, p, pd.to_datetime(test["start_date"]).dt.year)
     if target == "label":
-        report["rolling_origin"] = rolling_origin(frame, y, columns, params, text_min_df)
+        report["rolling_origin"] = rolling_origin(frame, y, columns, params, text_min_df, seeds=seeds)
+        if seeds > 1:
+            scored = pd.concat([test, frame[frame["split"] == "score"]])
+            reference = np.r_[np.zeros(len(test), bool), np.ones(len(scored) - len(test), bool)]
+            report["refit_stability"] = refit_stability(models["lightgbm"], train, y, scored, reference, text_min_df)
     return models["lightgbm"], report
 
 
@@ -183,7 +208,8 @@ def driver_directions(contrib: np.ndarray, names: list[str], frame: pd.DataFrame
     return out
 
 
-def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20, exclude=tuple(POST_START_LEAKS)):
+def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20, exclude=tuple(POST_START_LEAKS),
+        seeds: int = SEEDS):
     columns = inputs(frame, drop=exclude)
     labeled = frame["split"] != "score"
     if frame.loc[labeled, "label"].isna().any():
@@ -194,7 +220,7 @@ def run(frame: pd.DataFrame, grid: list[dict] = GRID, text_min_df: int = 20, exc
 
     final, report = {}, {"targets": {}}
     for target in TARGETS:
-        model, target_report = train_target(frame, target, columns, grid, text_min_df)
+        model, target_report = train_target(frame, target, columns, grid, text_min_df, seeds)
         report["targets"][target] = target_report
         if target in SCORED:
             final[target] = model
@@ -255,6 +281,7 @@ if __name__ == "__main__":
                 "trained_at": datetime.now(UTC).isoformat(),
                 "params": {t: report["targets"][t]["params"] for t in TARGETS},
                 "text": "tf-idf svd" + (" + pubmedbert embeddings" if "embedding" in frame.columns else ""),
+                "seeds": SEEDS,
                 "train": "start 2008-2014 (tuned on <2013 vs 2013-2014)", "test": "start 2015-2016",
                 "recent": "start 2017-2020"}
     folder = save(MODELS_DIR, version, models, metrics={k: v for k, v in report.items() if k != "features"},
@@ -275,6 +302,8 @@ if __name__ == "__main__":
     for fold in report["targets"]["label"].get("rolling_origin", []):
         print(f"rolling origin, test starts {fold['test_years']}: AUC {fold['roc_auc']} "
               f"(n={fold['n']}, trained on {fold['train_n']}), calibration {fold['calibration_fit']}")
+    if "refit_stability" in report["targets"]["label"]:
+        print("\nrefit stability:", report["targets"]["label"]["refit_stability"])
     for key in ("by_sponsor_class", "by_phase", "by_start_year"):
         if key in report["targets"]["label"]:
             print(f"\nlabel AUC {key.replace('_', ' ')}:", report["targets"]["label"][key])

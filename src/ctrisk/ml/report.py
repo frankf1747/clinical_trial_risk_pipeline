@@ -118,8 +118,11 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
             "## Model", "",
             (f"LightGBM, {params['n_estimators']} trees, {params['num_leaves']} leaves, learning rate "
             f"{params['learning_rate']}, min {params['min_child_samples']} trials per leaf; chosen from a "
-            f"{len(grid)}-point grid by AUC on the inner 2013–2014 split with early stopping. Baseline: "
-            "logistic regression on the same tabular inputs without text."), "",
+            f"{len(grid)}-point grid by AUC on the inner 2013–2014 split with early stopping."
+            + (f" The scored model is an ensemble of {manifest['seeds']} such fits that differ only in the random "
+               "seed behind row and column subsampling, with their log-odds averaged (see stability below)."
+               if manifest.get("seeds", 1) > 1 else "")
+            + " Baseline: logistic regression on the same tabular inputs without text."), "",
             "## Performance on 2015–2016 starts (held out)", ""]
     ci = test.get("roc_auc_ci95") or [None, None]
     out += _table(["Metric", "LightGBM", "Logistic baseline"], [
@@ -153,6 +156,15 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
         out += (_table(["Group", "Trials", "Terminated", "AUC"],
                        [[g, f"{r['n']:,}", f"{r['positives']:,}" if "positives" in r else "", f"{r['roc_auc']:.3f}"]
                         for g, r in groups.items()]) if groups else [PENDING, ""])
+    stab = t.get("refit_stability")
+    if stab:
+        out += ["## Stability across refits", "",
+                (f"The model was refit independently (other seeds, training rows shuffled, text refit) and both fits "
+                 f"scored the same {stab['trials']:,} trials (test and active). Percentiles are among active trials, "
+                 "as the lookup shows them."), ""]
+        out += _stability_table(stab)
+        out += [("The text components are computed exactly (ARPACK), so they do not depend on row order; the "
+                 "randomized solver used before v6 changed half of them with the order of the training rows."), ""]
     out += ["## Point-in-time audit (2017–2020 starts)", ""]
     if audit:
         m, s = audit["matched"], audit["strict"]
@@ -212,7 +224,8 @@ def card(metrics: dict, manifest: dict, features: dict, audit: dict | None = Non
             "- Registry features describe the latest record, not the record at start (see Status).",
             "- Planned enrollment and site counts are excluded because the current record reflects the outcome.",
             ("- FAERS features are a historical reporting signal: FAERS has duplicate and incomplete reports and "
-            "cannot establish causation or incidence. They were built from a quarterly sample (Q1 of each year)."),
+            "cannot establish causation or incidence. From v5 they use every quarter 2004–2026; earlier versions "
+            "used the first quarter of each year."),
             ("- The test period is one two-year window of one registry; performance on other periods or registries "
             "is untested except for the rolling-origin windows above."),
             "- Contributors are SHAP values of this model: associations, not mechanisms.", ""]
@@ -225,6 +238,21 @@ def _latest_backtest(models_dir: Path) -> dict | None:
 
 
 COHORT_NAMES = {"test": "2015–2016 starts", "recent": "2017–2020 starts"}
+
+
+def _stability_table(stab: dict) -> list[str]:
+    """One fit vs the seed ensemble: how far two independent refits disagree on the same trials."""
+    one, ens = stab["single_fit"], stab["ensemble"]
+    return _table(["", "One fit", f"Ensemble of {stab['seeds']}"],
+                  [["Rank correlation between the two fits", f"{one['spearman']:.3f}", f"{ens['spearman']:.3f}"],
+                   ["Median change in a trial's score", _pct(one["median_abs_change"]), _pct(ens["median_abs_change"])],
+                   ["95th percentile change in score", _pct(one["p95_abs_change"]), _pct(ens["p95_abs_change"])],
+                   ["Median change in percentile", f"{one['median_percentile_change']:.1f} points",
+                    f"{ens['median_percentile_change']:.1f} points"],
+                   ["Trials moving more than 5 percentile points", _pct(one["share_moved_over_5_points"]),
+                    _pct(ens["share_moved_over_5_points"])],
+                   ["Trials moving more than 10 percentile points", _pct(one["share_moved_over_10_points"]),
+                    _pct(ens["share_moved_over_10_points"])]])
 
 
 def _recalibration(r: dict) -> list[str]:
@@ -309,6 +337,14 @@ def survival_card(metrics: dict, manifest: dict) -> str:
                                                        if recal else "; read them as a lower bound for trials running now.")), ""]
     if recal:
         out += _recalibration(recal)
+    stab = metrics.get("refit_stability")
+    if stab:
+        out += ["## Stability across refits", "",
+                (f"The hazards come from an ensemble of {stab['seeds']} fits differing only in the random seed. To "
+                 "check it, the model was refit independently (other seeds, rows shuffled, text refit), and both "
+                 f"fits gave the next-2-year risk (as learned) of the {stab['running_trials']:,} trials running at "
+                 "the snapshot, ranked among themselves:"), ""]
+        out += _stability_table(stab)
     out += ["## Termination risk by start cohort", "",
             "Censoring-adjusted (Aalen–Johansen) probability of termination, no model involved:", ""]
     out += _table(["Start years", "Trials", "Still running", "Within 1 year", "Within 2 years", "Within 5 years"],
