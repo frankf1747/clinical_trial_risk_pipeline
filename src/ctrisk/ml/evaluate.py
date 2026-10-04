@@ -55,13 +55,16 @@ def calibration_fit(y, score, iterations: int = 50) -> dict:
                rate with the slope held at 1. 0 is ideal; > 0 means risk is under-predicted overall.
     slope:     from regressing the outcome on logit(score). 1 is ideal; < 1 means the scores are more
                extreme than the outcomes justify (too confident), > 1 too timid.
-    Both by Newton's method: two parameters, no regularization, no extra dependency.
+    Intercept by bisection, slope by damped Newton: no regularization, no extra dependency.
     """
     y, x = np.asarray(y, dtype=float), _logit(score)
-    a = 0.0
-    for _ in range(iterations):                                   # intercept with offset x, slope fixed
-        q = 1 / (1 + np.exp(-(x + a)))
-        a -= (q - y).sum() / max((q * (1 - q)).sum(), 1e-12)
+    lo, hi = -30.0, 30.0                 # intercept with offset x, slope fixed: mean of sigmoid(x + a) rises with a,
+    for _ in range(100):                 # so bisection always converges (Newton overshot on near-certain scores)
+        a = (lo + hi) / 2
+        if (1 / (1 + np.exp(-np.clip(x + a, -700, 700)))).mean() < y.mean():
+            lo = a
+        else:
+            hi = a
     X = np.column_stack([np.ones_like(x), x])
 
     def loglik(b):                                                # stable: log(1 + e^z) via logaddexp

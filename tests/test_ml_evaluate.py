@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from ctrisk.ml.evaluate import bootstrap_auc_ci, calibration, metrics, precision_at_top
 
@@ -87,3 +88,11 @@ def test_calibration_fit_converges_on_a_small_fold_with_few_positives():
     p = np.repeat([r[0] for r in rows], [r[1] for r in rows])
     y = np.concatenate([[1] * k + [0] * (n - k) for _, n, k in rows])
     assert abs(calibration_fit(y, p)["slope"] - 0.5882) < 0.001          # matches unpenalized sklearn
+
+
+def test_calibration_intercept_is_found_even_when_newton_would_overshoot():
+    from ctrisk.ml.evaluate import calibration_fit
+    p = np.full(1000, 0.999)                                    # far too confident: 10% observed vs 99.9%
+    y = (np.arange(1000) < 100).astype(float)
+    expected = np.log(0.1 / 0.9) - np.log(0.999 / 0.001)        # shift that makes the mean match
+    assert calibration_fit(y, p)["intercept"] == pytest.approx(expected, abs=1e-3)

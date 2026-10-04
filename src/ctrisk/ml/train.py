@@ -5,6 +5,7 @@ ENROLLMENT_RISK_SCORE), and termination for safety (reported only: it is where F
 For each, logistic regression is the baseline; LightGBM is tuned on an inner time split; ablations
 show what text, FAERS, and burden features contribute.
 """
+import os
 import subprocess
 from datetime import UTC, datetime
 
@@ -243,7 +244,9 @@ if __name__ == "__main__":
     frame.columns = frame.columns.str.lower()
     frame["start_date"] = pd.to_datetime(frame["start_date"])
     embeddings = Path("data", "parquet", "trial_embeddings")
-    if embeddings.exists():              # M9: biomedical sentence embeddings of the registration text
+    # M9: biomedical sentence embeddings of the text. Opt-in: they added nothing over TF-IDF
+    # (docs/experiments/2026-10-03-text-embeddings.md), so a model uses them only when asked to.
+    if os.getenv("TEXT_EMBEDDINGS") == "1":
         frame = attach(frame, embeddings)
 
     git = _git_version()  # before training, so a git problem cannot cost a finished model
