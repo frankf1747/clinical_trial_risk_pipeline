@@ -1,0 +1,49 @@
+{
+  "version": 5,
+  "snowflake_clone": "TRIAL_FEATURES_M9_EMBEDDINGS",
+  "git": "2093c22-dirty",
+  "trained_at": "2026-10-04T00:43:12.447460+00:00",
+  "params": {
+    "label": {
+      "n_estimators": 426,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "random_state": 0,
+      "verbose": -1,
+      "metric": "auc",
+      "num_leaves": 31,
+      "learning_rate": 0.03,
+      "min_child_samples": 50
+    },
+    "label_enrollment": {
+      "n_estimators": 421,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "random_state": 0,
+      "verbose": -1,
+      "metric": "auc",
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "min_child_samples": 50
+    },
+    "label_safety": {
+      "n_estimators": 104,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "random_state": 0,
+      "verbose": -1,
+      "metric": "auc",
+      "num_leaves": 63,
+      "learning_rate": 0.03,
+      "min_child_samples": 50
+    }
+  },
+  "text": "tf-idf svd + pubmedbert embeddings",
+  "train": "start 2008-2014 (tuned on <2013 vs 2013-2014)",
+  "test": "start 2015-2016",
+  "recent": "start 2017-2020",
+  "status": "experiment, not served: no significant gain over v4 (see docs/experiments/2026-10-03-text-embeddings.md)"
+}
