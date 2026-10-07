@@ -4,9 +4,27 @@
 <p class="muted">Look up any Phase 1–3 drug trial on ClinicalTrials.gov that started in 2008 or later. You'll see its
 termination-risk score, how it ranks against the trials running now, and what moved the score.</p>
 <form class="search" action="/trial" method="get">
-  <input name="nct" placeholder="NCT ID, e.g. NCT03801083" aria-label="NCT ID" autofocus>
+  <input name="nct" placeholder="NCT ID, e.g. NCT05983250" aria-label="NCT ID" autofocus>
   <button>Look up</button>
 </form>
+
+{% if examples %}
+<h2>Or try one of these</h2>
+<div class="examples">
+  {% for label, rows in examples %}
+  <div class="group">
+    <div class="glabel">{{ label }}</div>
+    {% for t in rows %}
+    <a class="ex" href="/trial/{{ t.nct_id }}">
+      <span class="extitle">{{ t.brief_title }}</span>
+      <span class="exmeta">{{ t.nct_id }} · Phase {{ phases.get(t.phase, t.phase) }} · {{ t.sponsor_name }}</span>
+      <span class="exrank">{% if t.risk_percentile is not none %}{% if t.risk_percentile >= 99 %}among the riskiest 1%{% elif t.risk_percentile < 1 %}among the lowest-risk 1%{% else %}riskier than {{ "%.0f"|format(t.risk_percentile) }}%{% endif %} of active trials{% endif %}{% if t.status %} · {{ t.status|replace("_", " ")|lower }}{% endif %}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
 <div class="card">
   <h2 style="margin-top:0">How good is it?</h2>

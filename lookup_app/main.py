@@ -27,6 +27,15 @@ SCORE_TYPES = {
 }
 PHASES = {"PHASE1": "1", "PHASE1/PHASE2": "1/2", "PHASE2": "2", "PHASE2/PHASE3": "2/3", "PHASE3": "3"}
 SPONSORS = {"INDUSTRY": "Industry", "OTHER": "Academic or other", "GOVERNMENT": "Government"}
+# Trials to click on the home page. The score, rank and status shown come from the published file; one that
+# is missing from it is left out.
+EXAMPLES = [
+    ("Running now, rated high risk", ["NCT05983250", "NCT04829604"]),
+    ("Running now, rated low risk", ["NCT07793227", "NCT07144176"]),
+    ("Finished: flagged, and it was terminated", ["NCT03352557", "NCT04634825"]),
+    ("Finished: rated low, and it completed", ["NCT03646331"]),
+    ("Finished: a miss, rated low but terminated", ["NCT02385084"]),
+]
 
 
 class Store:
@@ -92,9 +101,19 @@ def _context(request: Request, **extra) -> dict:
     return {"request": request, "s": STORE.summary, "phases": PHASES, "sponsors": SPONSORS, **extra}
 
 
+def examples() -> list[tuple[str, list[dict]]]:
+    """EXAMPLES with each trial's published row, dropping trials (and then groups) not in the file."""
+    out = []
+    for label, ids in EXAMPLES:
+        rows = [r for r in (STORE.get(i) for i in ids) if r is not None]
+        if rows:
+            out.append((label, rows))
+    return out
+
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse(request, "home.html", _context(request))
+    return templates.TemplateResponse(request, "home.html", _context(request, examples=examples()))
 
 
 @app.get("/trial")

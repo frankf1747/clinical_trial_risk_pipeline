@@ -114,3 +114,10 @@ def test_a_trial_not_yet_recruiting_is_not_described_as_running(client):
     text = client.get("/trial/NCT03801083").text
     main.STORE.trials.loc["NCT03801083", "years_running"] = 3.2
     assert "once it starts" in text and "has been running" not in text
+
+
+def test_home_page_lists_example_trials_that_are_in_the_published_file(client, monkeypatch):
+    monkeypatch.setattr(main, "EXAMPLES", [("Running now", ["NCT03801083", "NCT99999999"]), ("Gone", ["NCT88888888"])])
+    text = client.get("/").text
+    assert 'href="/trial/NCT03801083"' in text and "Drug A in PAH" in text and "riskier than 98% of active trials" in text
+    assert "NCT99999999" not in text and "Gone" not in text            # not published: left out, empty group too

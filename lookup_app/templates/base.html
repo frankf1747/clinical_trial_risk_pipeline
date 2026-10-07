@@ -27,6 +27,14 @@
   .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
   .stat b { display:block; font-size:1.5rem; }
   .meta { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:6px; }
+  .examples { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:8px; }
+  .group { display:grid; gap:8px; align-content:start; }
+  .glabel { font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  a.ex { display:grid; gap:2px; padding:12px 14px; background:var(--card); border:1px solid var(--line); border-radius:10px;
+         text-decoration:none; color:var(--ink); }
+  a.ex:hover, a.ex:focus-visible { border-color:var(--accent); }
+  .extitle { font-weight:600; line-height:1.3; }
+  .exmeta, .exrank { font-size:.8rem; color:var(--muted); }
   .badge { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
   .rank { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
   .bar { height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; margin: 10px 0 4px; }
